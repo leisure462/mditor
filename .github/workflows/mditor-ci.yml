@@ -11,6 +11,7 @@ permissions:
 
 env:
   CARGO_TERM_COLOR: always
+  CARGO_HOME: C:\cargo
 
 jobs:
   cargo-check:
@@ -18,6 +19,12 @@ jobs:
     runs-on: windows-2022
 
     steps:
+      - name: Enable Windows long paths
+        shell: pwsh
+        run: |
+          reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem" /v LongPathsEnabled /t REG_DWORD /d 1 /f
+          git config --system core.longpaths true
+
       - name: Checkout
         uses: actions/checkout@v4
 

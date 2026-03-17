@@ -225,22 +225,6 @@ members = [
     "crates/ztracing",
     "crates/ztracing_macro",
 
-    #
-    # Extensions
-    #
-
-    "extensions/glsl",
-    "extensions/html",
-    "extensions/proto",
-    "extensions/slash-commands-example",
-    "extensions/test-extension",
-
-    #
-    # Tooling
-    #
-
-    "tooling/perf",
-    "tooling/xtask",
 ]
 default-members = ["crates/zed"]
 
@@ -387,7 +371,6 @@ outline = { path = "crates/outline" }
 outline_panel = { path = "crates/outline_panel" }
 panel = { path = "crates/panel" }
 paths = { path = "crates/paths" }
-perf = { path = "tooling/perf" }
 picker = { path = "crates/picker" }
 prettier = { path = "crates/prettier" }
 settings_profile_selector = { path = "crates/settings_profile_selector" }
