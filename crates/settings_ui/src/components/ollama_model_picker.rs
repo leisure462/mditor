@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use fuzzy::StringMatch;
 use gpui::{AnyElement, App, Context, DismissEvent, ReadGlobal, SharedString, Task, Window, px};
+use language_models::AllLanguageModelSettings;
 use picker::{Picker, PickerDelegate};
-use settings::SettingsStore;
+use settings::{Settings, SettingsStore};
 use ui::{ListItem, ListItemSpacing, PopoverMenu, prelude::*};
 use util::ResultExt;
 
@@ -27,7 +28,14 @@ impl OllamaModelPickerDelegate {
         on_model_changed: impl Fn(SharedString, &mut Window, &mut App) + 'static,
         cx: &mut Context<OllamaModelPicker>,
     ) -> Self {
-        let mut models = edit_prediction::ollama::fetch_models(cx);
+        let mut models: Vec<SharedString> = AllLanguageModelSettings::get_global(cx)
+            .ollama
+            .available_models
+            .iter()
+            .map(|model| SharedString::from(model.name.clone()))
+            .collect();
+        models.sort();
+        models.dedup();
 
         let current_in_list = models.contains(&current_model);
         if !current_model.is_empty() && !current_in_list {

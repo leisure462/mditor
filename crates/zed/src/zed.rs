@@ -34,8 +34,6 @@ use language::Capability;
 use markdown::{Markdown, MarkdownElement, MarkdownFont, MarkdownStyle};
 use migrate::{MigrationBanner, MigrationEvent, MigrationNotification, MigrationType};
 use migrator::migrate_keymap;
-use onboarding::DOCS_URL;
-use onboarding::multibuffer_hint::MultibufferHint;
 pub use open_listener::*;
 use outline_panel::OutlinePanel;
 use paths::local_settings_file_relative_path;
@@ -77,6 +75,8 @@ use workspace::{
 };
 use workspace::{Pane, notifications::DetachAndPromptErr};
 use zed_actions::{OpenBrowser, OpenDocs, OpenServerSettings, OpenSettingsFile, OpenZedUrl, Quit};
+
+const MDITOR_DOCS_URL: &str = "https://github.com/leisure462/mditor#readme";
 
 actions!(
     zed,
@@ -619,7 +619,7 @@ fn register_actions(
     cx: &mut Context<Workspace>,
 ) {
     workspace
-        .register_action(|_, _: &OpenDocs, _, cx| cx.open_url(DOCS_URL))
+        .register_action(|_, _: &OpenDocs, _, cx| cx.open_url(MDITOR_DOCS_URL))
         .register_action(|_, _: &Minimize, window, _| {
             window.minimize_window();
         })
@@ -988,8 +988,6 @@ fn initialize_pane(
     let workspace_handle = cx.weak_entity();
     pane.update(cx, |pane, cx| {
         pane.toolbar().update(cx, |toolbar, cx| {
-            let multibuffer_hint = cx.new(|_| MultibufferHint::new());
-            toolbar.add_item(multibuffer_hint, window, cx);
             let breadcrumbs = cx.new(|_| Breadcrumbs::new());
             toolbar.add_item(breadcrumbs, window, cx);
             let buffer_search_bar = cx.new(|cx| {
@@ -4115,7 +4113,6 @@ mod tests {
             theme::init(theme::LoadThemes::JustBase, cx);
             client::init(&app_state.client, cx);
             workspace::init(app_state.clone(), cx);
-            onboarding::init(cx);
             app_state
         })
     }
@@ -4433,14 +4430,12 @@ mod tests {
                 "copilot",
                 "csv",
                 "debug_panel",
-                "debugger",
                 "dev",
                 "edit_prediction",
                 "editor",
                 "encoding_selector",
                 "file_finder",
                 "git",
-                "git_graph",
                 "git_onboarding",
                 "git_panel",
                 "git_picker",
@@ -4460,7 +4455,6 @@ mod tests {
                 "menu",
                 "multi_workspace",
                 "new_process_modal",
-                "notebook",
                 "notification_panel",
                 "onboarding",
                 "outline",
@@ -4470,11 +4464,8 @@ mod tests {
                 "picker",
                 "project_panel",
                 "project_search",
-                "project_symbols",
                 "projects",
                 "recent_projects",
-                "remote_debug",
-                "repl",
                 "rules_library",
                 "search",
                 "settings_editor",
@@ -4484,7 +4475,6 @@ mod tests {
                 "svg",
                 "syntax_tree_view",
                 "tab_switcher",
-                "task",
                 "terminal",
                 "terminal_panel",
                 "theme",
@@ -4666,15 +4656,11 @@ mod tests {
 
             gpui_tokio::init(cx);
             theme::init(theme::LoadThemes::JustBase, cx);
-            audio::init(cx);
-            channel::init(&app_state.client, app_state.user_store.clone(), cx);
-            call::init(app_state.client.clone(), app_state.user_store.clone(), cx);
             notifications::init(app_state.client.clone(), app_state.user_store.clone(), cx);
             workspace::init(app_state.clone(), cx);
             release_channel::init(Version::new(0, 0, 0), cx);
             command_palette::init(cx);
             editor::init(cx);
-            collab_ui::init(&app_state, cx);
             git_ui::init(cx);
             project_panel::init(cx);
             outline_panel::init(cx);
@@ -4689,7 +4675,6 @@ mod tests {
             language_model::init(app_state.user_store.clone(), app_state.client.clone(), cx);
             language_models::init(app_state.user_store.clone(), app_state.client.clone(), cx);
             web_search::init(cx);
-            git_graph::init(cx);
             web_search_providers::init(app_state.client.clone(), app_state.user_store.clone(), cx);
             let prompt_builder = PromptBuilder::load(app_state.fs.clone(), false, cx);
             project::AgentRegistryStore::init_global(
@@ -4706,14 +4691,6 @@ mod tests {
                 cx,
             );
 
-            repl::init(app_state.fs.clone(), cx);
-            repl::notebook::init(cx);
-            tasks_ui::init(cx);
-            project::debugger::breakpoint_store::BreakpointStore::init(
-                &app_state.client.clone().into(),
-            );
-            project::debugger::dap_store::DapStore::init(&app_state.client.clone().into(), cx);
-            debugger_ui::init(cx);
             initialize_workspace(app_state.clone(), prompt_builder, cx);
             search::init(cx);
             cx.set_global(workspace::PaneSearchBarCallbacks {

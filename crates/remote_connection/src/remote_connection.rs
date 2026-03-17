@@ -1,18 +1,26 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+    time::SystemTime,
+};
 
 use anyhow::Result;
 use askpass::EncryptedPassword;
-use auto_update::AutoUpdater;
-use futures::{FutureExt as _, channel::oneshot, select};
+use client::Client;
+use futures::{AsyncReadExt as _, FutureExt as _, StreamExt as _, channel::oneshot, select};
 use gpui::{
     AnyWindowHandle, App, AsyncApp, DismissEvent, Entity, EventEmitter, Focusable, FontFeatures,
     ParentElement as _, Render, SharedString, Task, TextStyleRefinement, WeakEntity,
 };
+use http_client::{AsyncBody, HttpClient, HttpClientWithUrl};
 use markdown::{Markdown, MarkdownElement, MarkdownStyle};
+use paths::remote_servers_dir;
 use release_channel::ReleaseChannel;
 use remote::{ConnectionIdentifier, RemoteClient, RemoteConnectionOptions, RemotePlatform};
 use semver::Version;
+use serde::{Deserialize, Serialize};
 use settings::Settings;
+use smol::fs::File;
 use theme::ThemeSettings;
 use ui::{
     ActiveTheme, Color, CommonAnimationExt, Context, InteractiveElement, IntoElement, KeyBinding,
@@ -20,6 +28,24 @@ use ui::{
 };
 use ui_input::{ERASED_EDITOR_FACTORY, ErasedEditor};
 use workspace::{DismissDecision, ModalView};
+
+const REMOTE_SERVER_CACHE_LIMIT: usize = 5;
+
+#[derive(Serialize, Debug)]
+struct AssetQuery<'a> {
+    asset: &'a str,
+    os: &'a str,
+    arch: &'a str,
+    metrics_id: Option<&'a str>,
+    system_id: Option<&'a str>,
+    is_staff: Option<bool>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
+struct ReleaseAsset {
+    version: String,
+    url: String,
+}
 
 pub struct RemoteConnectionPrompt {
     connection_string: SharedString,
@@ -428,7 +454,7 @@ impl remote::RemoteClientDelegate for RemoteClientDelegate {
     ) -> Task<anyhow::Result<PathBuf>> {
         let this = self.clone();
         cx.spawn(async move |cx| {
-            AutoUpdater::download_remote_server_release(
+            download_remote_server_release(
                 release_channel,
                 version.clone(),
                 platform.os.as_str(),
@@ -459,7 +485,7 @@ impl remote::RemoteClientDelegate for RemoteClientDelegate {
         cx: &mut AsyncApp,
     ) -> Task<Result<Option<String>>> {
         cx.spawn(async move |cx| {
-            AutoUpdater::get_remote_server_release_url(
+            get_remote_server_release_url(
                 release_channel,
                 version,
                 platform.os.as_str(),
@@ -481,6 +507,184 @@ impl RemoteClientDelegate {
                 .ok()
         });
     }
+}
+
+async fn download_remote_server_release(
+    release_channel: ReleaseChannel,
+    version: Option<Version>,
+    os: &str,
+    arch: &str,
+    set_status: impl Fn(&str, &mut AsyncApp) + Send + 'static,
+    cx: &mut AsyncApp,
+) -> Result<PathBuf> {
+    set_status("Fetching remote server release", cx);
+    let (release, client) =
+        get_remote_server_release_asset(release_channel, version.clone(), os, arch, cx).await?;
+
+    let servers_dir = remote_servers_dir();
+    let channel_dir = servers_dir.join(release_channel.dev_name());
+    let platform_dir = channel_dir.join(format!("{os}-{arch}"));
+    let version_path = platform_dir.join(format!("{}.gz", release.version));
+    smol::fs::create_dir_all(&platform_dir).await.ok();
+
+    if smol::fs::metadata(&version_path).await.is_err() {
+        log::info!(
+            "downloading mditor-remote-server {os} {arch} version {}",
+            release.version
+        );
+        set_status("Downloading remote server", cx);
+        download_remote_server_binary(&version_path, &release, client).await?;
+    }
+
+    if let Err(error) =
+        cleanup_remote_server_cache(&platform_dir, &version_path, REMOTE_SERVER_CACHE_LIMIT).await
+    {
+        log::warn!(
+            "Failed to clean up remote server cache in {:?}: {error:#}",
+            platform_dir
+        );
+    }
+
+    Ok(version_path)
+}
+
+async fn get_remote_server_release_url(
+    channel: ReleaseChannel,
+    version: Option<Version>,
+    os: &str,
+    arch: &str,
+    cx: &mut AsyncApp,
+) -> Result<Option<String>> {
+    let (release, _) = get_remote_server_release_asset(channel, version, os, arch, cx).await?;
+    Ok(Some(release.url))
+}
+
+async fn get_remote_server_release_asset(
+    release_channel: ReleaseChannel,
+    version: Option<Version>,
+    os: &str,
+    arch: &str,
+    cx: &mut AsyncApp,
+) -> Result<(ReleaseAsset, Arc<HttpClientWithUrl>)> {
+    let client: Arc<Client> = cx.update(|cx| Client::global(cx));
+
+    let (system_id, metrics_id, is_staff) = if client.telemetry().metrics_enabled() {
+        (
+            client.telemetry().system_id(),
+            client.telemetry().metrics_id(),
+            client.telemetry().is_staff(),
+        )
+    } else {
+        (None, None, None)
+    };
+
+    let version = if let Some(mut version) = version {
+        version.pre = semver::Prerelease::EMPTY;
+        version.build = semver::BuildMetadata::EMPTY;
+        version.to_string()
+    } else {
+        "latest".to_string()
+    };
+
+    let http_client = client.http_client();
+    let path = format!("/releases/{}/{}/asset", release_channel.dev_name(), version);
+    let url = http_client.build_zed_cloud_url_with_query(
+        &path,
+        AssetQuery {
+            asset: "zed-remote-server",
+            os,
+            arch,
+            metrics_id: metrics_id.as_deref(),
+            system_id: system_id.as_deref(),
+            is_staff,
+        },
+    )?;
+
+    let mut response = http_client
+        .get(url.as_str(), AsyncBody::default(), true)
+        .await?;
+    let mut body = Vec::new();
+    response.body_mut().read_to_end(&mut body).await?;
+
+    anyhow::ensure!(
+        response.status().is_success(),
+        "failed to fetch remote server release: {:?}",
+        String::from_utf8_lossy(&body),
+    );
+
+    let release = serde_json::from_slice(body.as_slice()).with_context(|| {
+        format!(
+            "error deserializing remote server release {:?}",
+            String::from_utf8_lossy(&body),
+        )
+    })?;
+
+    Ok((release, http_client))
+}
+
+async fn download_remote_server_binary(
+    target_path: &Path,
+    release: &ReleaseAsset,
+    client: Arc<HttpClientWithUrl>,
+) -> Result<()> {
+    let temp_path = target_path.with_extension("tmp");
+    let mut temp_file = File::create(&temp_path).await?;
+
+    let mut response = client.get(&release.url, AsyncBody::default(), true).await?;
+    anyhow::ensure!(
+        response.status().is_success(),
+        "failed to download remote server release: {:?}",
+        response.status()
+    );
+    smol::io::copy(response.body_mut(), &mut temp_file).await?;
+    drop(temp_file);
+    smol::fs::rename(&temp_path, target_path).await?;
+
+    Ok(())
+}
+
+async fn cleanup_remote_server_cache(
+    platform_dir: &Path,
+    keep_path: &Path,
+    limit: usize,
+) -> Result<()> {
+    if limit == 0 {
+        return Ok(());
+    }
+
+    let mut entries = smol::fs::read_dir(platform_dir).await?;
+    let mut candidates = Vec::new();
+    while let Some(entry) = entries.next().await {
+        let entry = entry?;
+        let path = entry.path();
+        if path == keep_path {
+            continue;
+        }
+        if !entry.file_type().await?.is_file() {
+            continue;
+        }
+
+        let modified = entry
+            .metadata()
+            .await
+            .ok()
+            .and_then(|metadata| metadata.modified().ok())
+            .unwrap_or(SystemTime::UNIX_EPOCH);
+        candidates.push((modified, path));
+    }
+
+    candidates.sort_by(|a, b| b.0.cmp(&a.0));
+    for (_, path) in candidates.into_iter().skip(limit.saturating_sub(1)) {
+        if let Err(error) = smol::fs::remove_file(&path).await {
+            log::warn!(
+                "Failed to remove old remote server archive {:?}: {}",
+                path,
+                error
+            );
+        }
+    }
+
+    Ok(())
 }
 
 pub fn connect(

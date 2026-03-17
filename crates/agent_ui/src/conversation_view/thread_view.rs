@@ -2713,8 +2713,10 @@ impl ThreadView {
         let focus_handle = self.message_editor.focus_handle(cx);
         let editor_bg_color = cx.theme().colors().editor_background;
         let editor_expanded = self.editor_expanded;
-        let has_messages = self.list_state.item_count() > 0;
-        let v2_empty_state = cx.has_flag::<AgentV2FeatureFlag>() && !has_messages;
+        // Mditor keeps the classic compact empty-thread layout so the
+        // message editor starts docked at the bottom instead of filling
+        // the whole sidebar on a brand new thread.
+        let v2_empty_state = false;
         let (expand_icon, expand_tooltip) = if editor_expanded {
             (IconName::Minimize, "Minimize Message Editor")
         } else {
@@ -7770,7 +7772,10 @@ impl ThreadView {
 impl Render for ThreadView {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let has_messages = self.list_state.item_count() > 0;
-        let v2_empty_state = cx.has_flag::<AgentV2FeatureFlag>() && !has_messages;
+        // Mditor keeps the classic compact empty-thread layout so the
+        // message editor starts docked at the bottom instead of filling
+        // the whole sidebar on a brand new thread.
+        let v2_empty_state = false;
 
         let conversation = v_flex()
             .when(!v2_empty_state, |this| this.flex_1())

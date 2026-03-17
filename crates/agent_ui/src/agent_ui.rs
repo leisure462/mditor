@@ -48,10 +48,7 @@ use command_palette_hooks::CommandPaletteFilter;
 use feature_flags::{AgentV2FeatureFlag, FeatureFlagAppExt as _};
 use fs::Fs;
 use gpui::{Action, App, Context, Entity, SharedString, Window, actions};
-use language::{
-    LanguageRegistry,
-    language_settings::{AllLanguageSettings, EditPredictionProvider},
-};
+use language::LanguageRegistry;
 use language_model::{
     ConfiguredModel, LanguageModelId, LanguageModelProviderId, LanguageModelRegistry,
 };
@@ -394,9 +391,6 @@ fn update_command_palette_filter(cx: &mut App) {
     let disable_ai = DisableAiSettings::get_global(cx).disable_ai;
     let agent_enabled = AgentSettings::get_global(cx).enabled;
     let agent_v2_enabled = cx.has_flag::<AgentV2FeatureFlag>();
-    let edit_prediction_provider = AllLanguageSettings::get_global(cx)
-        .edit_predictions
-        .provider;
 
     CommandPaletteFilter::update_global(cx, |filter, _| {
         use editor::actions::{
@@ -418,11 +412,7 @@ fn update_command_palette_filter(cx: &mut App) {
             filter.hide_namespace("agent");
             filter.hide_namespace("agents");
             filter.hide_namespace("assistant");
-            filter.hide_namespace("copilot");
             filter.hide_namespace("zed_predict_onboarding");
-            filter.hide_namespace("edit_prediction");
-
-            filter.hide_action_types(&edit_prediction_actions);
             filter.hide_action_types(&[TypeId::of::<zed_actions::OpenZedPredictOnboarding>()]);
         } else {
             if agent_enabled {
@@ -435,33 +425,13 @@ fn update_command_palette_filter(cx: &mut App) {
                 filter.hide_namespace("assistant");
             }
 
-            match edit_prediction_provider {
-                EditPredictionProvider::None => {
-                    filter.hide_namespace("edit_prediction");
-                    filter.hide_namespace("copilot");
-                    filter.hide_action_types(&edit_prediction_actions);
-                }
-                EditPredictionProvider::Copilot => {
-                    filter.show_namespace("edit_prediction");
-                    filter.show_namespace("copilot");
-                    filter.show_action_types(edit_prediction_actions.iter());
-                }
-                EditPredictionProvider::Zed
-                | EditPredictionProvider::Codestral
-                | EditPredictionProvider::Ollama
-                | EditPredictionProvider::OpenAiCompatibleApi
-                | EditPredictionProvider::Sweep
-                | EditPredictionProvider::Mercury
-                | EditPredictionProvider::Experimental(_) => {
-                    filter.show_namespace("edit_prediction");
-                    filter.hide_namespace("copilot");
-                    filter.show_action_types(edit_prediction_actions.iter());
-                }
-            }
-
             filter.show_namespace("zed_predict_onboarding");
             filter.show_action_types(&[TypeId::of::<zed_actions::OpenZedPredictOnboarding>()]);
         }
+
+        filter.hide_namespace("copilot");
+        filter.hide_namespace("edit_prediction");
+        filter.hide_action_types(&edit_prediction_actions);
 
         if agent_v2_enabled {
             filter.show_namespace("multi_workspace");

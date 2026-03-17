@@ -3,6 +3,7 @@ use copilot::{
     Copilot, GlobalCopilotAuth, Status,
     request::{self, PromptUserDeviceFlow},
 };
+use copilot_chat::{CopilotChat, CopilotChatConfiguration};
 use gpui::{
     App, ClipboardItem, Context, DismissEvent, Element, Entity, EventEmitter, FocusHandle,
     Focusable, InteractiveElement, IntoElement, MouseDownEvent, ParentElement, Render, Styled,
@@ -466,6 +467,7 @@ pub struct ConfigurationView {
     copilot_status: Option<Status>,
     is_authenticated: Box<dyn Fn(&mut App) -> bool + 'static>,
     edit_prediction: bool,
+    _copilot_chat_subscription: Option<Subscription>,
     _subscription: Option<Subscription>,
 }
 
@@ -480,14 +482,28 @@ impl ConfigurationView {
         mode: ConfigurationMode,
         cx: &mut Context<Self>,
     ) -> Self {
-        let copilot = AppState::try_global(cx)
-            .and_then(|state| state.upgrade())
-            .and_then(|state| GlobalCopilotAuth::try_get_or_init(state, cx));
+        let app_state = AppState::try_global(cx).and_then(|state| state.upgrade());
+
+        if CopilotChat::global(cx).is_none()
+            && let Some(app_state) = app_state.as_ref()
+        {
+            copilot_chat::init(
+                app_state.fs.clone(),
+                app_state.client.http_client(),
+                CopilotChatConfiguration::default(),
+                cx,
+            );
+        }
+
+        let copilot = app_state.and_then(|state| GlobalCopilotAuth::try_get_or_init(state, cx));
+        let copilot_chat_subscription = CopilotChat::global(cx)
+            .map(|copilot_chat| cx.observe(&copilot_chat, |_, _, cx| cx.notify()));
 
         Self {
             copilot_status: copilot.as_ref().map(|copilot| copilot.0.read(cx).status()),
             is_authenticated: Box::new(is_authenticated),
             edit_prediction: matches!(mode, ConfigurationMode::EditPrediction),
+            _copilot_chat_subscription: copilot_chat_subscription,
             _subscription: copilot.as_ref().map(|copilot| {
                 cx.observe(&copilot.0, |this, model, cx| {
                     this.copilot_status = Some(model.read(cx).status());

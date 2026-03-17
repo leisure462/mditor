@@ -19,7 +19,6 @@ use crate::application_menu::{
     ActivateDirection, ActivateMenuLeft, ActivateMenuRight, OpenApplicationMenu,
 };
 
-use call::ActiveCall;
 use client::{Client, UserStore};
 use cloud_api_types::Plan;
 use gpui::{
@@ -133,7 +132,7 @@ pub struct TitleBar {
     application_menu: Option<Entity<ApplicationMenu>>,
     _subscriptions: Vec<Subscription>,
     banner: Entity<OnboardingBanner>,
-    screen_share_popover_handle: PopoverMenuHandle<ContextMenu>,
+    _screen_share_popover_handle: PopoverMenuHandle<ContextMenu>,
 }
 
 impl Render for TitleBar {
@@ -252,8 +251,6 @@ impl TitleBar {
         let git_store = project.read(cx).git_store().clone();
         let user_store = workspace.app_state().user_store.clone();
         let client = workspace.app_state().client.clone();
-        let active_call = ActiveCall::try_global(cx);
-
         let platform_style = PlatformStyle::platform();
         let application_menu = match platform_style {
             PlatformStyle::Mac => {
@@ -284,10 +281,6 @@ impl TitleBar {
                 }
             }),
         );
-        if let Some(active_call) = active_call {
-            subscriptions
-                .push(cx.observe(&active_call, |this, _, cx| this.active_call_changed(cx)));
-        }
         subscriptions.push(cx.observe_window_activation(window, Self::window_activation_changed));
         subscriptions.push(
             cx.subscribe(&git_store, move |this, _, event, cx| match event {
@@ -358,7 +351,7 @@ impl TitleBar {
             client,
             _subscriptions: subscriptions,
             banner,
-            screen_share_popover_handle: PopoverMenuHandle::default(),
+            _screen_share_popover_handle: PopoverMenuHandle::default(),
         }
     }
 
@@ -767,46 +760,11 @@ impl TitleBar {
     }
 
     fn window_activation_changed(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        if let Some(active_call) = ActiveCall::try_global(cx) {
-            if window.is_window_active() {
-                active_call
-                    .update(cx, |call, cx| call.set_location(Some(&self.project), cx))
-                    .detach_and_log_err(cx);
-            } else if cx.active_window().is_none() {
-                active_call
-                    .update(cx, |call, cx| call.set_location(None, cx))
-                    .detach_and_log_err(cx);
-            }
-        }
         self.workspace
             .update(cx, |workspace, cx| {
                 workspace.update_active_view_for_followers(window, cx);
             })
             .ok();
-    }
-
-    fn active_call_changed(&mut self, cx: &mut Context<Self>) {
-        cx.notify();
-    }
-
-    fn share_project(&mut self, cx: &mut Context<Self>) {
-        let Some(active_call) = ActiveCall::try_global(cx) else {
-            return;
-        };
-        let project = self.project.clone();
-        active_call
-            .update(cx, |call, cx| call.share_project(project, cx))
-            .detach_and_log_err(cx);
-    }
-
-    fn unshare_project(&mut self, _: &mut Window, cx: &mut Context<Self>) {
-        let Some(active_call) = ActiveCall::try_global(cx) else {
-            return;
-        };
-        let project = self.project.clone();
-        active_call
-            .update(cx, |call, cx| call.unshare_project(project, cx))
-            .log_err();
     }
 
     fn render_connection_status(
