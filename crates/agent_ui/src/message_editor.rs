@@ -316,7 +316,7 @@ impl MessageEditor {
         };
         let thread_title = title
             .filter(|title| !title.is_empty())
-            .unwrap_or_else(|| SharedString::new_static("New Thread"));
+            .unwrap_or_else(|| SharedString::new_static("新线程"));
         let uri = MentionUri::Thread {
             id: session_id,
             name: thread_title.to_string(),
@@ -1237,7 +1237,7 @@ impl MessageEditor {
             files: true,
             directories: false,
             multiple: true,
-            prompt: Some("Select Images".into()),
+            prompt: Some("选择图片".into()),
         });
 
         window

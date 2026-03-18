@@ -24,7 +24,7 @@ fn main() {
     if cfg!(target_os = "macos") {
         println!("cargo:rustc-env=MACOSX_DEPLOYMENT_TARGET=10.15.7");
 
-        // Weakly link ReplayKit to ensure Zed can be used on macOS 10.15+.
+        // Weakly link ReplayKit to ensure Prism can be used on macOS 10.15+.
         println!("cargo:rustc-link-arg=-Wl,-weak_framework,ReplayKit");
 
         // Seems to be required to enable Swift concurrency
@@ -224,8 +224,8 @@ fn main() {
             res.set_toolkit_path(explicit_rc_toolkit_path.as_str());
         }
         res.set_icon(icon.to_str().unwrap());
-        res.set("FileDescription", "Mditor");
-        res.set("ProductName", "Mditor");
+        res.set("FileDescription", "Prism");
+        res.set("ProductName", "Prism");
 
         if let Err(e) = res.compile() {
             eprintln!("{}", e);

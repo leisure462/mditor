@@ -1729,13 +1729,13 @@ impl ProtoClient for Client {
     }
 }
 
-/// Prefix for the mditor:// url scheme.
-pub const ZED_URL_SCHEME: &str = "mditor";
+/// Prefix for the prism:// url scheme.
+pub const ZED_URL_SCHEME: &str = "prism";
 
 /// A parsed Zed link that can be handled internally by the application.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ZedLink {
-    /// Join a channel: `zed.dev/channel/channel-name-123` or `mditor://channel/channel-name-123`
+    /// Join a channel: `zed.dev/channel/channel-name-123` or `prism://channel/channel-name-123`
     Channel { channel_id: u64 },
     /// Open channel notes: `zed.dev/channel/channel-name-123/notes` or with heading `notes#heading`
     ChannelNotes {

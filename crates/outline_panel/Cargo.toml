@@ -23,6 +23,7 @@ gpui.workspace = true
 itertools.workspace = true
 language.workspace = true
 log.workspace = true
+markdown_preview.workspace = true
 menu.workspace = true
 outline.workspace = true
 project.workspace = true

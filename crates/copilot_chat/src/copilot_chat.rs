@@ -779,12 +779,11 @@ async fn get_models(
     let mut models: Vec<Model> = all_models
         .into_iter()
         .filter(|model| {
-            model.model_picker_enabled
-                && model.capabilities.model_type.as_str() == "chat"
+            model.capabilities.model_type.as_str() == "chat"
                 && model
                     .policy
                     .as_ref()
-                    .is_none_or(|policy| policy.state == "enabled")
+                    .is_none_or(|policy| policy.state != "disabled")
         })
         .collect();
 

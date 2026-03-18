@@ -5,230 +5,210 @@ pub fn app_menus(_cx: &mut App) -> Vec<Menu> {
 
     let view_items = vec![
         MenuItem::action(
-            "Zoom In",
+            "放大",
             zed_actions::IncreaseBufferFontSize { persist: false },
         ),
         MenuItem::action(
-            "Zoom Out",
+            "缩小",
             zed_actions::DecreaseBufferFontSize { persist: false },
         ),
         MenuItem::action(
-            "Reset Zoom",
+            "重置缩放",
             zed_actions::ResetBufferFontSize { persist: false },
         ),
-        MenuItem::action(
-            "Reset All Zoom",
-            zed_actions::ResetAllZoom { persist: false },
-        ),
+        MenuItem::action("重置所有缩放", zed_actions::ResetAllZoom { persist: false }),
         MenuItem::separator(),
-        MenuItem::action("Toggle Left Dock", workspace::ToggleLeftDock),
-        MenuItem::action("Toggle Right Dock", workspace::ToggleRightDock),
-        MenuItem::action("Toggle Bottom Dock", workspace::ToggleBottomDock),
-        MenuItem::action("Toggle All Docks", workspace::ToggleAllDocks),
+        MenuItem::action("切换左侧停靠区", workspace::ToggleLeftDock),
+        MenuItem::action("切换右侧停靠区", workspace::ToggleRightDock),
+        MenuItem::action("切换底部停靠区", workspace::ToggleBottomDock),
+        MenuItem::action("切换全部停靠区", workspace::ToggleAllDocks),
         MenuItem::submenu(Menu {
-            name: "Editor Layout".into(),
+            name: "编辑器布局".into(),
             items: vec![
-                MenuItem::action("Split Up", workspace::SplitUp::default()),
-                MenuItem::action("Split Down", workspace::SplitDown::default()),
-                MenuItem::action("Split Left", workspace::SplitLeft::default()),
-                MenuItem::action("Split Right", workspace::SplitRight::default()),
+                MenuItem::action("向上拆分", workspace::SplitUp::default()),
+                MenuItem::action("向下拆分", workspace::SplitDown::default()),
+                MenuItem::action("向左拆分", workspace::SplitLeft::default()),
+                MenuItem::action("向右拆分", workspace::SplitRight::default()),
             ],
         }),
         MenuItem::separator(),
-        MenuItem::action("Project Panel", zed_actions::project_panel::ToggleFocus),
-        MenuItem::action("Outline Panel", outline_panel::ToggleFocus),
+        MenuItem::action("项目面板", zed_actions::project_panel::ToggleFocus),
+        MenuItem::action("大纲面板", outline_panel::ToggleFocus),
         MenuItem::separator(),
-        MenuItem::action("Preview Markdown", markdown_preview::OpenPreview),
+        MenuItem::action("预览 Markdown", markdown_preview::OpenPreview),
         MenuItem::separator(),
     ];
 
     vec![
         Menu {
-            name: "Mditor".into(),
+            name: "Prism".into(),
             items: vec![
-                MenuItem::action("About Mditor", zed_actions::About),
+                MenuItem::action("关于 Prism", zed_actions::About),
                 MenuItem::separator(),
                 MenuItem::submenu(Menu {
-                    name: "Settings".into(),
+                    name: "设置".into(),
                     items: vec![
-                        MenuItem::action("Open Settings", zed_actions::OpenSettings),
-                        MenuItem::action("Open Settings File", super::OpenSettingsFile),
-                        MenuItem::action("Open Project Settings", zed_actions::OpenProjectSettings),
-                        MenuItem::action(
-                            "Open Project Settings File",
-                            super::OpenProjectSettingsFile,
-                        ),
-                        MenuItem::action("Open Default Settings", super::OpenDefaultSettings),
-                        MenuItem::separator(),
-                        MenuItem::action("Open Keymap", zed_actions::OpenKeymap),
-                        MenuItem::action("Open Keymap File", zed_actions::OpenKeymapFile),
-                        MenuItem::action(
-                            "Open Default Key Bindings",
-                            zed_actions::OpenDefaultKeymap,
-                        ),
+                        MenuItem::action("打开设置", zed_actions::OpenSettings),
+                        MenuItem::action("打开设置文件", super::OpenSettingsFile),
+                        MenuItem::action("打开项目设置", zed_actions::OpenProjectSettings),
+                        MenuItem::action("打开项目设置文件", super::OpenProjectSettingsFile),
+                        MenuItem::action("打开默认设置", super::OpenDefaultSettings),
                         MenuItem::separator(),
                         MenuItem::action(
-                            "Select Theme...",
+                            "选择主题...",
                             zed_actions::theme_selector::Toggle::default(),
                         ),
                         MenuItem::action(
-                            "Select Icon Theme...",
+                            "选择图标主题...",
                             zed_actions::icon_theme_selector::Toggle::default(),
                         ),
                     ],
                 }),
                 MenuItem::separator(),
                 #[cfg(target_os = "macos")]
-                MenuItem::os_submenu("Services", gpui::SystemMenuType::Services),
+                MenuItem::os_submenu("服务", gpui::SystemMenuType::Services),
                 MenuItem::separator(),
                 #[cfg(target_os = "macos")]
-                MenuItem::action("Hide Mditor", super::Hide),
+                MenuItem::action("隐藏 Prism", super::Hide),
                 #[cfg(target_os = "macos")]
-                MenuItem::action("Hide Others", super::HideOthers),
+                MenuItem::action("隐藏其他应用", super::HideOthers),
                 #[cfg(target_os = "macos")]
-                MenuItem::action("Show All", super::ShowAll),
+                MenuItem::action("显示全部", super::ShowAll),
                 MenuItem::separator(),
-                MenuItem::action("Quit Mditor", Quit),
+                MenuItem::action("退出 Prism", Quit),
             ],
         },
         Menu {
-            name: "File".into(),
+            name: "文件".into(),
             items: vec![
-                MenuItem::action("New", workspace::NewFile),
-                MenuItem::action("New Window", workspace::NewWindow),
+                MenuItem::action("新建", workspace::NewFile),
+                MenuItem::action("新建窗口", workspace::NewWindow),
                 MenuItem::separator(),
                 #[cfg(not(target_os = "macos"))]
-                MenuItem::action("Open File...", workspace::OpenFiles),
+                MenuItem::action("打开文件...", workspace::OpenFiles),
                 MenuItem::action(
                     if cfg!(not(target_os = "macos")) {
-                        "Open Folder..."
+                        "打开文件夹..."
                     } else {
-                        "Open…"
+                        "打开…"
                     },
                     workspace::Open::default(),
                 ),
                 MenuItem::action(
-                    "Open Recent...",
+                    "打开最近项目...",
                     zed_actions::OpenRecent {
                         create_new_window: false,
                     },
                 ),
                 MenuItem::separator(),
-                MenuItem::action("Add Folder to Project…", workspace::AddFolderToProject),
+                MenuItem::action("将文件夹添加到项目…", workspace::AddFolderToProject),
                 MenuItem::separator(),
-                MenuItem::action("Save", workspace::Save { save_intent: None }),
-                MenuItem::action("Save As…", workspace::SaveAs),
-                MenuItem::action("Save All", workspace::SaveAll { save_intent: None }),
+                MenuItem::action("保存", workspace::Save { save_intent: None }),
+                MenuItem::action("另存为…", workspace::SaveAs),
+                MenuItem::action("全部保存", workspace::SaveAll { save_intent: None }),
                 MenuItem::separator(),
                 MenuItem::action(
-                    "Close Editor",
+                    "关闭编辑器",
                     workspace::CloseActiveItem {
                         save_intent: None,
                         close_pinned: true,
                     },
                 ),
-                MenuItem::action("Close Project", workspace::CloseProject),
-                MenuItem::action("Close Window", workspace::CloseWindow),
+                MenuItem::action("关闭项目", workspace::CloseProject),
+                MenuItem::action("关闭窗口", workspace::CloseWindow),
             ],
         },
         Menu {
-            name: "Edit".into(),
+            name: "编辑".into(),
             items: vec![
-                MenuItem::os_action("Undo", editor::actions::Undo, OsAction::Undo),
-                MenuItem::os_action("Redo", editor::actions::Redo, OsAction::Redo),
+                MenuItem::os_action("撤销", editor::actions::Undo, OsAction::Undo),
+                MenuItem::os_action("重做", editor::actions::Redo, OsAction::Redo),
                 MenuItem::separator(),
-                MenuItem::os_action("Cut", editor::actions::Cut, OsAction::Cut),
-                MenuItem::os_action("Copy", editor::actions::Copy, OsAction::Copy),
-                MenuItem::action("Copy and Trim", editor::actions::CopyAndTrim),
-                MenuItem::os_action("Paste", editor::actions::Paste, OsAction::Paste),
+                MenuItem::os_action("剪切", editor::actions::Cut, OsAction::Cut),
+                MenuItem::os_action("复制", editor::actions::Copy, OsAction::Copy),
+                MenuItem::action("复制并裁剪", editor::actions::CopyAndTrim),
+                MenuItem::os_action("粘贴", editor::actions::Paste, OsAction::Paste),
                 MenuItem::separator(),
-                MenuItem::action("Find", search::buffer_search::Deploy::find()),
-                MenuItem::action("Find in Project", workspace::DeploySearch::find()),
+                MenuItem::action("查找", search::buffer_search::Deploy::find()),
+                MenuItem::action("在项目中查找", workspace::DeploySearch::find()),
             ],
         },
         Menu {
-            name: "Selection".into(),
+            name: "选择".into(),
             items: vec![
-                MenuItem::os_action(
-                    "Select All",
-                    editor::actions::SelectAll,
-                    OsAction::SelectAll,
-                ),
-                MenuItem::action("Expand Selection", editor::actions::SelectLargerSyntaxNode),
-                MenuItem::action("Shrink Selection", editor::actions::SelectSmallerSyntaxNode),
-                MenuItem::action("Select Next Sibling", editor::actions::SelectNextSyntaxNode),
+                MenuItem::os_action("全选", editor::actions::SelectAll, OsAction::SelectAll),
+                MenuItem::action("扩大选区", editor::actions::SelectLargerSyntaxNode),
+                MenuItem::action("缩小选区", editor::actions::SelectSmallerSyntaxNode),
+                MenuItem::action("选择下一个同级节点", editor::actions::SelectNextSyntaxNode),
                 MenuItem::action(
-                    "Select Previous Sibling",
+                    "选择上一个同级节点",
                     editor::actions::SelectPreviousSyntaxNode,
                 ),
                 MenuItem::separator(),
                 MenuItem::action(
-                    "Add Cursor Above",
+                    "在上方添加光标",
                     editor::actions::AddSelectionAbove {
                         skip_soft_wrap: true,
                     },
                 ),
                 MenuItem::action(
-                    "Add Cursor Below",
+                    "在下方添加光标",
                     editor::actions::AddSelectionBelow {
                         skip_soft_wrap: true,
                     },
                 ),
                 MenuItem::action(
-                    "Select Next Occurrence",
+                    "选择下一个匹配项",
                     editor::actions::SelectNext {
                         replace_newest: false,
                     },
                 ),
                 MenuItem::action(
-                    "Select Previous Occurrence",
+                    "选择上一个匹配项",
                     editor::actions::SelectPrevious {
                         replace_newest: false,
                     },
                 ),
-                MenuItem::action("Select All Occurrences", editor::actions::SelectAllMatches),
+                MenuItem::action("选择所有匹配项", editor::actions::SelectAllMatches),
                 MenuItem::separator(),
-                MenuItem::action("Move Line Up", editor::actions::MoveLineUp),
-                MenuItem::action("Move Line Down", editor::actions::MoveLineDown),
-                MenuItem::action("Duplicate Selection", editor::actions::DuplicateLineDown),
+                MenuItem::action("上移当前行", editor::actions::MoveLineUp),
+                MenuItem::action("下移当前行", editor::actions::MoveLineDown),
+                MenuItem::action("复制选区", editor::actions::DuplicateLineDown),
             ],
         },
         Menu {
-            name: "View".into(),
+            name: "查看".into(),
             items: view_items,
         },
         Menu {
-            name: "Go".into(),
+            name: "前往".into(),
             items: vec![
-                MenuItem::action("Back", workspace::GoBack),
-                MenuItem::action("Forward", workspace::GoForward),
+                MenuItem::action("后退", workspace::GoBack),
+                MenuItem::action("前进", workspace::GoForward),
                 MenuItem::separator(),
-                MenuItem::action("Command Palette...", zed_actions::command_palette::Toggle),
+                MenuItem::action("命令面板...", zed_actions::command_palette::Toggle),
                 MenuItem::separator(),
-                MenuItem::action("Go to File...", workspace::ToggleFileFinder::default()),
+                MenuItem::action("转到文件...", workspace::ToggleFileFinder::default()),
                 // MenuItem::action("Go to Symbol in Project", project_symbols::Toggle),
-                MenuItem::action(
-                    "Go to Symbol in Editor...",
-                    zed_actions::outline::ToggleOutline,
-                ),
-                MenuItem::action("Go to Line/Column...", editor::actions::ToggleGoToLine),
+                MenuItem::action("转到编辑器内符号...", zed_actions::outline::ToggleOutline),
+                MenuItem::action("转到行/列...", editor::actions::ToggleGoToLine),
             ],
         },
         Menu {
-            name: "Window".into(),
+            name: "窗口".into(),
             items: vec![
-                MenuItem::action("Minimize", super::Minimize),
-                MenuItem::action("Zoom", super::Zoom),
+                MenuItem::action("最小化", super::Minimize),
+                MenuItem::action("缩放", super::Zoom),
                 MenuItem::separator(),
             ],
         },
         Menu {
-            name: "Help".into(),
+            name: "帮助".into(),
             items: vec![
-                MenuItem::action("View Dependency Licenses", zed_actions::OpenLicenses),
+                MenuItem::action("查看依赖许可证", zed_actions::OpenLicenses),
                 MenuItem::separator(),
                 MenuItem::action(
-                    "Documentation",
+                    "文档",
                     super::OpenBrowser {
                         url: "https://zed.dev/docs".into(),
                     },

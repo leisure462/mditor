@@ -132,7 +132,12 @@ impl Render for Toolbar {
                 this.child(
                     h_flex()
                         .items_start()
-                        .justify_between()
+                        .when(has_left_items && has_right_items, |this| {
+                            this.justify_between()
+                        })
+                        .when(!has_left_items && has_right_items, |this| {
+                            this.justify_end()
+                        })
                         .gap(DynamicSpacing::Base08.rems(cx))
                         .when(has_left_items, |this| {
                             this.child(

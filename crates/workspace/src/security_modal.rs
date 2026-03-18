@@ -142,7 +142,7 @@ impl Render for SecurityModal {
                             )
                             .child(
                                 Label::new(
-                                    "Review .mditor/settings.json for any commands configured by this project.",
+                                    "Review .prism/settings.json for any commands configured by this project.",
                                 )
                                 .color(Color::Muted),
                             ),

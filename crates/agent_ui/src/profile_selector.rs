@@ -164,11 +164,11 @@ impl Focusable for ProfileSelector {
 impl Render for ProfileSelector {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         if !self.provider.profiles_supported(cx) {
-            return Button::new("tools-not-supported-button", "Tools Unsupported")
+            return Button::new("tools-not-supported-button", "不支持工具")
                 .disabled(true)
                 .label_size(LabelSize::Small)
                 .color(Color::Muted)
-                .tooltip(Tooltip::text("This model does not support tools."))
+                .tooltip(Tooltip::text("当前模型不支持工具调用。"))
                 .into_any_element();
         }
 
@@ -180,7 +180,7 @@ impl Render for ProfileSelector {
 
         let selected_profile = profile
             .map(|profile| profile.name.clone())
-            .unwrap_or_else(|| "Unknown".into());
+            .unwrap_or_else(|| "未知".into());
 
         let icon = if self.picker_handle.is_deployed() {
             IconName::ChevronUp
@@ -197,7 +197,7 @@ impl Render for ProfileSelector {
         let disabled = self.disabled;
 
         let tooltip: Box<dyn Fn(&mut Window, &mut App) -> AnyView> = if disabled {
-            Box::new(Tooltip::text("Disabled until generation is done"))
+            Box::new(Tooltip::text("生成完成前不可用"))
         } else {
             Box::new(Tooltip::element({
                 move |_window, cx| {
@@ -206,7 +206,7 @@ impl Render for ProfileSelector {
                         .gap_1()
                         .child(
                             container()
-                                .child(Label::new("Change Profile"))
+                                .child(Label::new("切换配置"))
                                 .child(KeyBinding::for_action(&ToggleProfileSelector, cx)),
                         )
                         .child(
@@ -214,7 +214,7 @@ impl Render for ProfileSelector {
                                 .pt_1()
                                 .border_t_1()
                                 .border_color(cx.theme().colors().border_variant)
-                                .child(Label::new("Cycle Through Profiles"))
+                                .child(Label::new("轮换配置"))
                                 .child(KeyBinding::for_action(&CycleModeSelector, cx)),
                         )
                         .into_any()
@@ -362,7 +362,7 @@ impl ProfilePickerDelegate {
         for (idx, candidate) in candidates.iter().enumerate() {
             if !candidate.is_builtin && !inserted_custom_header {
                 if !entries.is_empty() {
-                    entries.push(ProfilePickerEntry::Header("Custom Profiles".into()));
+                    entries.push(ProfilePickerEntry::Header("自定义配置".into()));
                 }
                 inserted_custom_header = true;
             }
@@ -437,14 +437,14 @@ impl PickerDelegate for ProfilePickerDelegate {
     type ListItem = AnyElement;
 
     fn placeholder_text(&self, _: &mut Window, _: &mut App) -> Arc<str> {
-        "Search profiles…".into()
+        "搜索配置…".into()
     }
 
     fn no_matches_text(&self, _window: &mut Window, _cx: &mut App) -> Option<SharedString> {
         let text = if self.candidates.is_empty() {
-            "No profiles.".into()
+            "没有可用配置。".into()
         } else {
-            "No profiles match your search.".into()
+            "没有匹配搜索条件的配置。".into()
         };
         Some(text)
     }
@@ -681,7 +681,7 @@ impl PickerDelegate for ProfilePickerDelegate {
                 .border_color(cx.theme().colors().border_variant)
                 .p_1p5()
                 .child(
-                    Button::new("configure", "Configure")
+                    Button::new("configure", "配置")
                         .full_width()
                         .style(ButtonStyle::Outlined)
                         .key_binding(
@@ -731,7 +731,7 @@ mod tests {
         )));
         assert!(entries.iter().any(|entry| matches!(
             entry,
-            ProfilePickerEntry::Header(label) if label.as_ref() == "Custom Profiles"
+            ProfilePickerEntry::Header(label) if label.as_ref() == "自定义配置"
         )));
     }
 

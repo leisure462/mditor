@@ -2,10 +2,7 @@ use std::{
     ops::Range,
     path::{Path, PathBuf},
     rc::Rc,
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering},
-    },
+    sync::Arc,
     time::Duration,
 };
 
@@ -14,7 +11,7 @@ use agent::{ContextServerRegistry, SharedThread, ThreadStore};
 use agent_client_protocol as acp;
 use agent_servers::AgentServer;
 use collections::HashSet;
-use db::kvp::{Dismissable, KEY_VALUE_STORE};
+use db::kvp::KEY_VALUE_STORE;
 use itertools::Itertools;
 use project::AgentId;
 use serde::{Deserialize, Serialize};
@@ -30,13 +27,12 @@ use crate::ui::HoldForDefault;
 use crate::{
     AddContextServer, AgentDiffPane, ConversationView, CopyThreadToClipboard, CycleStartThreadIn,
     Follow, InlineAssistant, LoadThreadFromClipboard, NewTextThread, NewThread,
-    OpenActiveThreadAsMarkdown, OpenAgentDiff, OpenHistory, ResetTrialEndUpsell, ResetTrialUpsell,
-    StartThreadIn, ToggleNavigationMenu, ToggleNewThreadMenu, ToggleOptionsMenu,
+    OpenActiveThreadAsMarkdown, OpenAgentDiff, OpenHistory, StartThreadIn, ToggleNavigationMenu,
+    ToggleNewThreadMenu, ToggleOptionsMenu,
     agent_configuration::{AgentConfiguration, AssistantConfigurationEvent},
     conversation_view::{AcpThreadViewEvent, ThreadView},
     slash_command::SlashCommandCompletionProvider,
     text_thread_editor::{AgentPanelDelegate, TextThreadEditor, make_lsp_adapter_delegate},
-    ui::EndTrialUpsell,
 };
 use crate::{
     Agent, AgentInitialContent, ExternalSourcePrompt, NewExternalAgentThread,
@@ -49,12 +45,9 @@ use crate::{
 use crate::{ManageProfiles, ThreadHistoryViewEvent};
 use crate::{ThreadHistory, agent_connection_store::AgentConnectionStore};
 use agent_settings::AgentSettings;
-use ai_onboarding::AgentPanelOnboarding;
 use anyhow::{Context as _, Result, anyhow};
 use assistant_slash_command::SlashCommandWorkingSet;
 use assistant_text_thread::{TextThread, TextThreadEvent, TextThreadSummary};
-use client::UserStore;
-use cloud_api_types::Plan;
 use collections::HashMap;
 use editor::{Anchor, AnchorRangeExt as _, Editor, EditorEvent, MultiBuffer};
 use fs::Fs;
@@ -94,7 +87,7 @@ use zed_actions::{
 
 const AGENT_PANEL_KEY: &str = "agent_panel";
 const RECENTLY_UPDATED_MENU_LIMIT: usize = 6;
-const DEFAULT_THREAD_TITLE: &str = "New Thread";
+const DEFAULT_THREAD_TITLE: &str = "新线程";
 
 #[derive(Default)]
 struct SidebarsByWindow(
@@ -312,19 +305,6 @@ pub fn init(cx: &mut App) {
                 .register_action(|_workspace, _: &ResetOnboarding, window, cx| {
                     window.dispatch_action(workspace::RestoreBanner.boxed_clone(), cx);
                     window.refresh();
-                })
-                .register_action(|workspace, _: &ResetTrialUpsell, _window, cx| {
-                    if let Some(panel) = workspace.panel::<AgentPanel>(cx) {
-                        panel.update(cx, |panel, _| {
-                            panel
-                                .on_boarding_upsell_dismissed
-                                .store(false, Ordering::Release);
-                        });
-                    }
-                    OnboardingUpsell::set_dismissed(false, cx);
-                })
-                .register_action(|_workspace, _: &ResetTrialEndUpsell, _window, cx| {
-                    TrialEndUpsell::set_dismissed(false, cx);
                 })
                 .register_action(|workspace, _: &ResetAgentZoom, window, cx| {
                     if let Some(panel) = workspace.panel::<AgentPanel>(cx) {
@@ -653,7 +633,7 @@ impl AgentType {
 
     fn label(&self) -> SharedString {
         match self {
-            Self::NativeAgent | Self::TextThread => "Zed Agent".into(),
+            Self::NativeAgent | Self::TextThread => "Prism Agent".into(),
             Self::Custom { id, .. } => id.0.clone(),
         }
     }
@@ -794,7 +774,6 @@ pub struct AgentPanel {
     workspace: WeakEntity<Workspace>,
     /// Workspace id is used as a database key
     workspace_id: Option<WorkspaceId>,
-    user_store: Entity<UserStore>,
     project: Entity<Project>,
     fs: Arc<dyn Fs>,
     language_registry: Arc<LanguageRegistry>,
@@ -819,7 +798,6 @@ pub struct AgentPanel {
     height: Option<Pixels>,
     zoomed: bool,
     pending_serialization: Option<Task<Result<()>>>,
-    onboarding: Entity<AgentPanelOnboarding>,
     selected_agent_type: AgentType,
     start_thread_in: StartThreadIn,
     worktree_creation_status: Option<WorktreeCreationStatus>,
@@ -828,7 +806,6 @@ pub struct AgentPanel {
     _worktree_creation_task: Option<Task<()>>,
     show_trust_workspace_message: bool,
     last_configuration_error_telemetry: Option<String>,
-    on_boarding_upsell_dismissed: AtomicBool,
     _active_view_observation: Option<Subscription>,
     pub(crate) sidebar: Option<Entity<crate::sidebar::Sidebar>>,
 }
@@ -1007,10 +984,8 @@ impl AgentPanel {
         cx: &mut Context<Self>,
     ) -> Self {
         let fs = workspace.app_state().fs.clone();
-        let user_store = workspace.app_state().user_store.clone();
         let project = workspace.project();
         let language_registry = project.read(cx).languages().clone();
-        let client = workspace.client().clone();
         let workspace_id = workspace.database_id();
         let workspace = workspace.weak_handle();
         let context_server_registry =
@@ -1045,8 +1020,8 @@ impl AgentPanel {
                             .update(cx, |panel, cx| panel.history_for_selected_agent(window, cx))
                         {
                             let view_all_label = match history {
-                                History::AgentThreads { .. } => "View All",
-                                History::TextThreads => "View All Text Threads",
+                                History::AgentThreads { .. } => "查看全部",
+                                History::TextThreads => "查看全部文本线程",
                             };
                             menu = Self::populate_recently_updated_menu_section(
                                 menu, panel, history, cx,
@@ -1080,25 +1055,6 @@ impl AgentPanel {
                 .ok();
         });
 
-        let weak_panel = cx.entity().downgrade();
-        let onboarding = cx.new(|cx| {
-            AgentPanelOnboarding::new(
-                user_store.clone(),
-                client,
-                move |_window, cx| {
-                    weak_panel
-                        .update(cx, |panel, _| {
-                            panel
-                                .on_boarding_upsell_dismissed
-                                .store(true, Ordering::Release);
-                        })
-                        .ok();
-                    OnboardingUpsell::set_dismissed(true, cx);
-                },
-                cx,
-            )
-        });
-
         let connection_store = cx.new(|cx| {
             let mut store = AgentConnectionStore::new(project.clone(), cx);
             // Register the native agent right away, so that it is available for
@@ -1114,7 +1070,6 @@ impl AgentPanel {
             workspace_id,
             active_view,
             workspace,
-            user_store,
             project: project.clone(),
             fs: fs.clone(),
             language_registry,
@@ -1136,7 +1091,6 @@ impl AgentPanel {
             height: None,
             zoomed: false,
             pending_serialization: None,
-            onboarding,
             text_thread_history,
             thread_store,
             selected_agent_type: AgentType::default(),
@@ -1147,7 +1101,6 @@ impl AgentPanel {
             _worktree_creation_task: None,
             show_trust_workspace_message: false,
             last_configuration_error_telemetry: None,
-            on_boarding_upsell_dismissed: AtomicBool::new(OnboardingUpsell::dismissed()),
             _active_view_observation: None,
             sidebar: None,
         };
@@ -2185,7 +2138,7 @@ impl AgentPanel {
                     return menu;
                 }
 
-                menu = menu.header("Recently Updated");
+                menu = menu.header("最近更新");
 
                 for entry in entries {
                     let title = entry
@@ -2233,7 +2186,7 @@ impl AgentPanel {
                     return menu;
                 }
 
-                menu = menu.header("Recent Text Threads");
+                menu = menu.header("最近文本线程");
 
                 for entry in entries {
                     let title = if entry.title.is_empty() {
@@ -3203,7 +3156,7 @@ impl AgentPanel {
                     .map(|r| r.read(cx).title_editor.clone())
                 {
                     if is_generating_title {
-                        Label::new("New Thread…")
+                        Label::new("新线程…")
                             .color(Color::Muted)
                             .truncate()
                             .with_animation(
@@ -3302,12 +3255,12 @@ impl AgentPanel {
             }
             ActiveView::History { history: kind } => {
                 let title = match kind {
-                    History::AgentThreads { .. } => "History",
-                    History::TextThreads => "Text Thread History",
+                    History::AgentThreads { .. } => "历史记录",
+                    History::TextThreads => "文本线程历史",
                 };
                 Label::new(title).truncate().into_any_element()
             }
-            ActiveView::Configuration => Label::new("Settings").truncate().into_any_element(),
+            ActiveView::Configuration => Label::new("设置").truncate().into_any_element(),
             ActiveView::Uninitialized => Label::new("Agent").truncate().into_any_element(),
         };
 
@@ -3349,9 +3302,9 @@ impl AgentPanel {
         let focus_handle = self.focus_handle(cx);
 
         let full_screen_label = if self.is_zoomed(window, cx) {
-            "Disable Full Screen"
+            "退出全屏"
         } else {
-            "Enable Full Screen"
+            "启用全屏"
         };
 
         let text_thread_view = match &self.active_view {
@@ -3397,7 +3350,7 @@ impl AgentPanel {
                     let focus_handle = focus_handle.clone();
                     move |_window, cx| {
                         Tooltip::for_action_in(
-                            "Toggle Agent Menu",
+                            "切换 Agent 菜单",
                             &ToggleOptionsMenu,
                             &focus_handle,
                             cx,
@@ -3413,11 +3366,11 @@ impl AgentPanel {
                         menu = menu.context(focus_handle.clone());
 
                         if thread_with_messages | text_thread_with_messages {
-                            menu = menu.header("Current Thread");
+                            menu = menu.header("当前线程");
 
                             if let Some(text_thread_view) = text_thread_view.as_ref() {
                                 menu = menu
-                                    .entry("Regenerate Thread Title", None, {
+                                    .entry("重新生成线程标题", None, {
                                         let text_thread_view = text_thread_view.clone();
                                         move |_, cx| {
                                             Self::handle_regenerate_text_thread_title(
@@ -3431,7 +3384,7 @@ impl AgentPanel {
 
                             if let Some(conversation_view) = conversation_view.as_ref() {
                                 menu = menu
-                                    .entry("Regenerate Thread Title", None, {
+                                    .entry("重新生成线程标题", None, {
                                         let conversation_view = conversation_view.clone();
                                         move |_, cx| {
                                             Self::handle_regenerate_thread_title(
@@ -3445,17 +3398,17 @@ impl AgentPanel {
                         }
 
                         menu = menu
-                            .header("MCP Servers")
-                            .action("Add Custom Server…", Box::new(AddContextServer))
+                            .header("MCP 服务器")
+                            .action("添加自定义服务器…", Box::new(AddContextServer))
                             .separator()
-                            .action("Rules", Box::new(OpenRulesLibrary::default()))
-                            .action("Profiles", Box::new(ManageProfiles::default()))
-                            .action("Settings", Box::new(OpenSettings))
+                            .action("规则", Box::new(OpenRulesLibrary::default()))
+                            .action("配置方案", Box::new(ManageProfiles::default()))
+                            .action("设置", Box::new(OpenSettings))
                             .separator()
                             .action(full_screen_label, Box::new(ToggleZoom));
 
                         if has_auth_methods {
-                            menu = menu.action("Reauthenticate", Box::new(ReauthenticateAgent))
+                            menu = menu.action("重新认证", Box::new(ReauthenticateAgent))
                         }
 
                         menu
@@ -3840,7 +3793,7 @@ impl AgentPanel {
                             if !thread.is_empty() {
                                 let session_id = thread.id().clone();
                                 this.item(
-                                    ContextMenuEntry::new("New From Summary")
+                                    ContextMenuEntry::new("从摘要新建")
                                         .icon(IconName::ThreadFromSummary)
                                         .icon_color(Color::Muted)
                                         .handler(move |window, cx| {
@@ -3857,7 +3810,7 @@ impl AgentPanel {
                             }
                         })
                         .item(
-                            ContextMenuEntry::new("Zed Agent")
+                            ContextMenuEntry::new("Prism Agent")
                                 .when(
                                     is_agent_selected(AgentType::NativeAgent)
                                         | is_agent_selected(AgentType::TextThread),
@@ -3891,7 +3844,7 @@ impl AgentPanel {
                                 }),
                         )
                         .item(
-                            ContextMenuEntry::new("Text Thread")
+                            ContextMenuEntry::new("文本线程")
                                 .action(NewTextThread.boxed_clone())
                                 .icon(IconName::TextThread)
                                 .icon_color(Color::Muted)
@@ -4135,7 +4088,7 @@ impl AgentPanel {
                 .trigger_with_tooltip(agent_selector_button, {
                     move |_window, cx| {
                         Tooltip::for_action_in(
-                            "New Thread\u{2026}",
+                            "新线程\u{2026}",
                             &ToggleNewThreadMenu,
                             &focus_handle,
                             cx,
@@ -4193,7 +4146,7 @@ impl AgentPanel {
                     {
                         move |_window, cx| {
                             Tooltip::for_action_in(
-                                "New Thread\u{2026}",
+                                "新线程\u{2026}",
                                 &ToggleNewThreadMenu,
                                 &focus_handle,
                                 cx,
@@ -4296,130 +4249,20 @@ impl AgentPanel {
         }
     }
 
-    fn should_render_trial_end_upsell(&self, cx: &mut Context<Self>) -> bool {
-        if TrialEndUpsell::dismissed() {
-            return false;
-        }
-
-        match &self.active_view {
-            ActiveView::TextThread { .. } => {
-                if LanguageModelRegistry::global(cx)
-                    .read(cx)
-                    .default_model()
-                    .is_some_and(|model| {
-                        model.provider.id() != language_model::ZED_CLOUD_PROVIDER_ID
-                    })
-                {
-                    return false;
-                }
-            }
-            ActiveView::Uninitialized
-            | ActiveView::AgentThread { .. }
-            | ActiveView::History { .. }
-            | ActiveView::Configuration => return false,
-        }
-
-        let plan = self.user_store.read(cx).plan();
-        let has_previous_trial = self.user_store.read(cx).trial_started_at().is_some();
-
-        plan.is_some_and(|plan| plan == Plan::ZedFree) && has_previous_trial
-    }
-
-    fn should_render_onboarding(&self, cx: &mut Context<Self>) -> bool {
-        if self.on_boarding_upsell_dismissed.load(Ordering::Acquire) {
-            return false;
-        }
-
-        let user_store = self.user_store.read(cx);
-
-        if user_store.plan().is_some_and(|plan| plan == Plan::ZedPro)
-            && user_store
-                .subscription_period()
-                .and_then(|period| period.0.checked_add_days(chrono::Days::new(1)))
-                .is_some_and(|date| date < chrono::Utc::now())
-        {
-            OnboardingUpsell::set_dismissed(true, cx);
-            self.on_boarding_upsell_dismissed
-                .store(true, Ordering::Release);
-            return false;
-        }
-
-        let has_configured_non_zed_providers = LanguageModelRegistry::read_global(cx)
-            .visible_providers()
-            .iter()
-            .any(|provider| {
-                provider.is_authenticated(cx)
-                    && provider.id() != language_model::ZED_CLOUD_PROVIDER_ID
-            });
-
-        match &self.active_view {
-            ActiveView::Uninitialized | ActiveView::History { .. } | ActiveView::Configuration => {
-                false
-            }
-            ActiveView::AgentThread {
-                conversation_view, ..
-            } if conversation_view.read(cx).as_native_thread(cx).is_none() => false,
-            ActiveView::AgentThread { conversation_view } => {
-                let history_is_empty = conversation_view
-                    .read(cx)
-                    .history()
-                    .is_none_or(|h| h.read(cx).is_empty());
-                history_is_empty || !has_configured_non_zed_providers
-            }
-            ActiveView::TextThread { .. } => {
-                let history_is_empty = self.text_thread_history.read(cx).is_empty();
-                history_is_empty || !has_configured_non_zed_providers
-            }
-        }
-    }
-
     fn render_onboarding(
         &self,
         _window: &mut Window,
-        cx: &mut Context<Self>,
+        _cx: &mut Context<Self>,
     ) -> Option<impl IntoElement> {
-        if !self.should_render_onboarding(cx) {
-            return None;
-        }
-
-        let text_thread_view = matches!(&self.active_view, ActiveView::TextThread { .. });
-
-        Some(
-            div()
-                .when(text_thread_view, |this| {
-                    this.bg(cx.theme().colors().editor_background)
-                })
-                .child(self.onboarding.clone()),
-        )
+        None::<AnyElement>
     }
 
     fn render_trial_end_upsell(
         &self,
         _window: &mut Window,
-        cx: &mut Context<Self>,
+        _cx: &mut Context<Self>,
     ) -> Option<impl IntoElement> {
-        if !self.should_render_trial_end_upsell(cx) {
-            return None;
-        }
-
-        Some(
-            v_flex()
-                .absolute()
-                .inset_0()
-                .size_full()
-                .bg(cx.theme().colors().panel_background)
-                .opacity(0.85)
-                .block_mouse_except_scroll()
-                .child(EndTrialUpsell::new(Arc::new({
-                    let this = cx.entity();
-                    move |_, cx| {
-                        this.update(cx, |_this, cx| {
-                            TrialEndUpsell::set_dismissed(true, cx);
-                            cx.notify();
-                        });
-                    }
-                }))),
-        )
+        None::<AnyElement>
     }
 
     fn emit_configuration_error_telemetry_if_needed(
@@ -4468,9 +4311,9 @@ impl AgentPanel {
                 .when(border_bottom, |this| {
                     this.border_position(ui::BorderPosition::Bottom)
                 })
-                .title("Sign in to continue using Zed as your LLM provider.")
+                .title("登录后继续使用 Zed 作为你的 LLM 提供商。")
                 .actions_slot(
-                    Button::new("sign_in", "Sign In")
+                    Button::new("sign_in", "登录")
                         .style(ButtonStyle::Tinted(ui::TintColor::Warning))
                         .label_size(LabelSize::Small)
                         .on_click({
@@ -4498,7 +4341,7 @@ impl AgentPanel {
                 })
                 .title(configuration_error.to_string())
                 .actions_slot(
-                    Button::new("settings", "Configure")
+                    Button::new("settings", "配置")
                         .style(ButtonStyle::Tinted(ui::TintColor::Warning))
                         .label_size(LabelSize::Small)
                         .key_binding(
@@ -4652,17 +4495,18 @@ impl AgentPanel {
             return None;
         }
 
-        let description = "To protect your system, third-party code—like MCP servers—won't run until you mark this workspace as safe.";
+        let description =
+            "为了保护你的系统，在你将此工作区标记为安全之前，MCP 服务器等第三方代码不会运行。";
 
         Some(
             Callout::new()
                 .icon(IconName::Warning)
                 .severity(Severity::Warning)
                 .border_position(ui::BorderPosition::Bottom)
-                .title("You're in Restricted Mode")
+                .title("你当前处于受限模式")
                 .description(description)
                 .actions_slot(
-                    Button::new("open-trust-modal", "Configure Project Trust")
+                    Button::new("open-trust-modal", "配置项目受信任状态")
                         .label_size(LabelSize::Small)
                         .style(ButtonStyle::Outlined)
                         .on_click({
@@ -4767,9 +4611,7 @@ impl Render for AgentPanel {
 
                         parent
                             .map(|this| {
-                                if !self.should_render_onboarding(cx)
-                                    && let Some(err) = configuration_error.as_ref()
-                                {
+                                if let Some(err) = configuration_error.as_ref() {
                                     this.child(self.render_configuration_error(
                                         true,
                                         err,
@@ -5005,18 +4847,6 @@ impl AgentPanelDelegate for ConcreteAssistantPanelDelegate {
             });
         });
     }
-}
-
-struct OnboardingUpsell;
-
-impl Dismissable for OnboardingUpsell {
-    const KEY: &'static str = "dismissed-trial-upsell";
-}
-
-struct TrialEndUpsell;
-
-impl Dismissable for TrialEndUpsell {
-    const KEY: &'static str = "dismissed-trial-end-upsell";
 }
 
 /// Test-only helper methods

@@ -11,14 +11,14 @@ use workspace::{Toast, Workspace};
 actions!(
     cli,
     [
-        /// Installs the Mditor CLI tool to the system PATH.
+        /// Installs the Prism CLI tool to the system PATH.
         InstallCliBinary,
     ]
 );
 
 async fn install_script(cx: &AsyncApp) -> Result<PathBuf> {
     let cli_path = cx.update(|cx| cx.path_for_auxiliary_executable("cli"))?;
-    let link_path = Path::new("/usr/local/bin/mditor");
+    let link_path = Path::new("/usr/local/bin/prism");
     let bin_dir_path = link_path.parent().unwrap();
 
     // Don't re-create symlink if it points to the same CLI binary.
@@ -62,7 +62,7 @@ async fn install_script(cx: &AsyncApp) -> Result<PathBuf> {
 }
 
 pub fn install_cli_binary(window: &mut Window, cx: &mut Context<Workspace>) {
-    const LINUX_PROMPT_DETAIL: &str = "If you installed Mditor from our official release add ~/.local/bin to your PATH.\n\nIf you installed Mditor from a different source like your package manager, then you may need to create an alias or symlink manually.\n\nDepending on your package manager, the CLI might be named mditor.";
+    const LINUX_PROMPT_DETAIL: &str = "If you installed Prism from our official release add ~/.local/bin to your PATH.\n\nIf you installed Prism from a different source like your package manager, then you may need to create an alias or symlink manually.\n\nDepending on your package manager, the CLI might be named prism.";
 
     cx.spawn_in(window, async move |workspace, cx| {
         if cfg!(any(target_os = "linux", target_os = "freebsd")) {
@@ -80,13 +80,13 @@ pub fn install_cli_binary(window: &mut Window, cx: &mut Context<Workspace>) {
             .context("error creating CLI symlink")?;
 
         workspace.update_in(cx, |workspace, _, cx| {
-            struct InstalledMditorCli;
+            struct InstalledPrismCli;
 
             workspace.show_toast(
                 Toast::new(
-                    NotificationId::unique::<InstalledMditorCli>(),
+                    NotificationId::unique::<InstalledPrismCli>(),
                     format!(
-                        "Installed `mditor` to {}. You can launch {} from your terminal.",
+                        "Installed `prism` to {}. You can launch {} from your terminal.",
                         path.to_string_lossy(),
                         ReleaseChannel::global(cx).display_name()
                     ),
@@ -97,5 +97,5 @@ pub fn install_cli_binary(window: &mut Window, cx: &mut Context<Workspace>) {
         register_zed_scheme(cx).await.log_err();
         Ok(())
     })
-    .detach_and_prompt_err("Error installing mditor cli", window, cx, |_, _, _| None);
+    .detach_and_prompt_err("Error installing prism cli", window, cx, |_, _, _| None);
 }

@@ -2323,7 +2323,6 @@ impl ConversationView {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        self.play_notification_sound(window, cx);
         self.show_notification(caption, icon, window, cx);
     }
 
@@ -2348,19 +2347,6 @@ impl ConversationView {
                 .upgrade()
                 .is_some_and(|workspace| AgentPanel::is_visible(&workspace, cx))
         }
-    }
-
-    fn play_notification_sound(&self, window: &Window, cx: &mut App) {
-        let settings = AgentSettings::get_global(cx);
-        let visible = window.is_window_active()
-            && if let Some(mw) = window.root::<MultiWorkspace>().flatten() {
-                self.agent_panel_visible(&mw, cx)
-            } else {
-                self.workspace
-                    .upgrade()
-                    .is_some_and(|workspace| AgentPanel::is_visible(&workspace, cx))
-            };
-        let _ = settings.play_sound_when_agent_done && !visible;
     }
 
     fn show_notification(

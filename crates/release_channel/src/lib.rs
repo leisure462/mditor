@@ -1,4 +1,4 @@
-//! Provides constructs for the Zed app version and release channel.
+//! Provides constructs for the Prism app version and release channel.
 
 #![deny(missing_docs)]
 
@@ -28,14 +28,14 @@ pub static RELEASE_CHANNEL: LazyLock<ReleaseChannel> =
 #[cfg(target_os = "windows")]
 pub fn app_identifier() -> &'static str {
     match *RELEASE_CHANNEL {
-        ReleaseChannel::Dev => "Mditor-Dev",
-        ReleaseChannel::Nightly => "Mditor-Nightly",
-        ReleaseChannel::Preview => "Mditor-Preview",
-        ReleaseChannel::Stable => "Mditor-Stable",
+        ReleaseChannel::Dev => "Prism-Dev",
+        ReleaseChannel::Nightly => "Prism-Nightly",
+        ReleaseChannel::Preview => "Prism-Preview",
+        ReleaseChannel::Stable => "Prism-Stable",
     }
 }
 
-/// The Git commit SHA that Zed was built at.
+/// The Git commit SHA that Prism was built at.
 #[derive(Clone, Eq, Debug, PartialEq)]
 pub struct AppCommitSha(String);
 
@@ -75,7 +75,7 @@ struct GlobalAppVersion(Version);
 
 impl Global for GlobalAppVersion {}
 
-/// The version of Zed.
+/// The version of Prism.
 pub struct AppVersion;
 
 impl AppVersion {
@@ -118,12 +118,12 @@ impl AppVersion {
     }
 }
 
-/// A Zed release channel.
+/// A Prism release channel.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
 pub enum ReleaseChannel {
     /// The development release channel.
     ///
-    /// Used for local debug builds of Zed.
+    /// Used for local debug builds of Prism.
     #[default]
     Dev,
 
@@ -173,10 +173,10 @@ impl ReleaseChannel {
     /// Returns the display name for this [`ReleaseChannel`].
     pub fn display_name(&self) -> &'static str {
         match self {
-            ReleaseChannel::Dev => "Mditor Dev",
-            ReleaseChannel::Nightly => "Mditor Nightly",
-            ReleaseChannel::Preview => "Mditor Preview",
-            ReleaseChannel::Stable => "Mditor",
+            ReleaseChannel::Dev => "Prism Dev",
+            ReleaseChannel::Nightly => "Prism Nightly",
+            ReleaseChannel::Preview => "Prism Preview",
+            ReleaseChannel::Stable => "Prism",
         }
     }
 
@@ -195,10 +195,10 @@ impl ReleaseChannel {
     /// This also has to match the bundle identifier for Zed on macOS.
     pub fn app_id(&self) -> &'static str {
         match self {
-            ReleaseChannel::Dev => "dev.mditor.Mditor-Dev",
-            ReleaseChannel::Nightly => "dev.mditor.Mditor-Nightly",
-            ReleaseChannel::Preview => "dev.mditor.Mditor-Preview",
-            ReleaseChannel::Stable => "dev.mditor.Mditor",
+            ReleaseChannel::Dev => "dev.prism.Prism-Dev",
+            ReleaseChannel::Nightly => "dev.prism.Prism-Nightly",
+            ReleaseChannel::Preview => "dev.prism.Prism-Preview",
+            ReleaseChannel::Stable => "dev.prism.Prism",
         }
     }
 

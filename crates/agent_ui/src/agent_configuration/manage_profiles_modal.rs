@@ -547,7 +547,7 @@ impl ManageProfilesModal {
             div()
                 .track_focus(&self.focus_handle(cx))
                 .size_full()
-                .child(ProfileModalHeader::new("Agent Profiles", None))
+                .child(ProfileModalHeader::new("Agent 配置", None))
                 .child(
                     v_flex()
                         .pb_1()
@@ -561,7 +561,7 @@ impl ManageProfilesModal {
                             this.child(ListSeparator)
                                 .child(
                                     div().pl_2().pb_1().child(
-                                        Label::new("Custom Profiles")
+                                        Label::new("自定义配置")
                                             .size(LabelSize::Small)
                                             .color(Color::Muted),
                                     ),

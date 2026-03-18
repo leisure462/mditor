@@ -1,4 +1,4 @@
-name: Mditor CI
+name: Prism CI
 
 on:
   pull_request:
@@ -34,5 +34,5 @@ jobs:
       - name: Cache cargo artifacts
         uses: Swatinem/rust-cache@v2
 
-      - name: Check mditor
-        run: cargo check -p zed --bin mditor
+      - name: Check prism
+        run: cargo check -p zed --bin prism

@@ -15,7 +15,7 @@ use ui::{
     prelude::*,
 };
 
-const DEFAULT_TITLE: &SharedString = &SharedString::new_static("New Thread");
+const DEFAULT_TITLE: &SharedString = &SharedString::new_static("新线程");
 
 fn thread_title(entry: &SavedTextThreadMetadata) -> &SharedString {
     if entry.title.is_empty() {
@@ -75,7 +75,7 @@ impl TextThreadHistory {
     ) -> Self {
         let search_editor = cx.new(|cx| {
             let mut editor = Editor::single_line(window, cx);
-            editor.set_placeholder_text("Search threads...", window, cx);
+            editor.set_placeholder_text("搜索线程...", window, cx);
             editor
         });
 
@@ -114,10 +114,6 @@ impl TextThreadHistory {
         };
         this.update_visible_items(false, cx);
         this
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.visible_items.is_empty()
     }
 
     fn update_visible_items(&mut self, preserve_selected_item: bool, cx: &mut Context<Self>) {
@@ -411,7 +407,7 @@ impl TextThreadHistory {
                 let duration = now.signed_duration_since(entry_time);
                 let days = duration.num_days();
 
-                format!("{}d", days)
+                format!("{}天", days)
             }
             EntryTimeFormat::TimeOnly => format.format_timestamp(timestamp, self.local_timezone),
         };
@@ -462,7 +458,7 @@ impl TextThreadHistory {
                                 .icon_size(IconSize::XSmall)
                                 .icon_color(Color::Muted)
                                 .tooltip(move |_window, cx| {
-                                    Tooltip::for_action("Delete", &RemoveSelectedThread, cx)
+                                    Tooltip::for_action("删除", &RemoveSelectedThread, cx)
                                 })
                                 .on_click(cx.listener(move |this, _, _window, cx| {
                                     this.remove_thread(ix, cx);
@@ -525,14 +521,14 @@ impl Render for TextThreadHistory {
 
                 if has_no_history {
                     view.justify_center().items_center().child(
-                        Label::new("You don't have any past text threads yet.")
+                        Label::new("你还没有任何历史文本线程。")
                             .size(LabelSize::Small)
                             .color(Color::Muted),
                     )
                 } else if self.search_produced_no_matches() {
                     view.justify_center()
                         .items_center()
-                        .child(Label::new("No threads match your search.").size(LabelSize::Small))
+                        .child(Label::new("没有匹配搜索条件的线程。").size(LabelSize::Small))
                 } else {
                     view.child(
                         uniform_list(
@@ -558,7 +554,7 @@ impl Render for TextThreadHistory {
                         .border_color(cx.theme().colors().border_variant)
                         .when(!self.confirming_delete_history, |this| {
                             this.child(
-                                Button::new("delete_history", "Delete All History")
+                                Button::new("delete_history", "删除全部历史记录")
                                     .full_width()
                                     .style(ButtonStyle::Outlined)
                                     .label_size(LabelSize::Small)
@@ -577,11 +573,11 @@ impl Render for TextThreadHistory {
                                         .flex_wrap()
                                         .gap_1()
                                         .child(
-                                            Label::new("Delete all text threads?")
+                                            Label::new("要删除全部文本线程吗？")
                                                 .size(LabelSize::Small),
                                         )
                                         .child(
-                                            Label::new("You won't be able to recover them later.")
+                                            Label::new("删除后将无法恢复。")
                                                 .size(LabelSize::Small)
                                                 .color(Color::Muted),
                                         ),
@@ -590,14 +586,14 @@ impl Render for TextThreadHistory {
                                     h_flex()
                                         .gap_1()
                                         .child(
-                                            Button::new("cancel_delete", "Cancel")
+                                            Button::new("cancel_delete", "取消")
                                                 .label_size(LabelSize::Small)
                                                 .on_click(cx.listener(|this, _, window, cx| {
                                                     this.cancel_delete_history(window, cx);
                                                 })),
                                         )
                                         .child(
-                                            Button::new("confirm_delete", "Delete")
+                                            Button::new("confirm_delete", "删除")
                                                 .style(ButtonStyle::Tinted(ui::TintColor::Error))
                                                 .color(Color::Error)
                                                 .label_size(LabelSize::Small)
@@ -634,9 +630,9 @@ impl EntryTimeFormat {
             .to_offset(timezone);
 
         match self {
-            EntryTimeFormat::DateAndTime => datetime.format(&time::macros::format_description!(
-                "[month repr:short] [day], [year]"
-            )),
+            EntryTimeFormat::DateAndTime => {
+                datetime.format(&time::macros::format_description!("[year]-[month]-[day]"))
+            }
             EntryTimeFormat::TimeOnly => {
                 datetime.format(&time::macros::format_description!("[hour]:[minute]"))
             }
@@ -695,11 +691,11 @@ impl TimeBucket {
 impl Display for TimeBucket {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TimeBucket::Today => write!(f, "Today"),
-            TimeBucket::Yesterday => write!(f, "Yesterday"),
-            TimeBucket::ThisWeek => write!(f, "This Week"),
-            TimeBucket::PastWeek => write!(f, "Past Week"),
-            TimeBucket::All => write!(f, "All"),
+            TimeBucket::Today => write!(f, "今天"),
+            TimeBucket::Yesterday => write!(f, "昨天"),
+            TimeBucket::ThisWeek => write!(f, "本周"),
+            TimeBucket::PastWeek => write!(f, "上周"),
+            TimeBucket::All => write!(f, "更早"),
         }
     }
 }

@@ -1,4 +1,4 @@
-name: Mditor Release
+name: Prism Release
 
 on:
   push:
@@ -36,23 +36,23 @@ jobs:
         with:
           shared-key: release-windows-x86_64
 
-      - name: Build mditor
-        run: cargo build --release -p zed --bin mditor
+      - name: Build prism
+        run: cargo build --release -p zed --bin prism
 
       - name: Package release archive
         shell: pwsh
         run: |
           $version = $env:GITHUB_REF_NAME.Substring(1)
-          $bundleDir = "dist/mditor-$version-windows-x86_64"
+          $bundleDir = "dist/prism-$version-windows-x86_64"
           New-Item -ItemType Directory -Path $bundleDir -Force | Out-Null
-          Copy-Item "target/release/mditor.exe" "$bundleDir/"
+          Copy-Item "target/release/prism.exe" "$bundleDir/"
           Copy-Item "README.md","LICENSE-GPL","LICENSE-APACHE","LICENSE-AGPL" $bundleDir
-          Compress-Archive -Path "$bundleDir/*" -DestinationPath "dist/mditor-$version-windows-x86_64.zip" -Force
+          Compress-Archive -Path "$bundleDir/*" -DestinationPath "dist/prism-$version-windows-x86_64.zip" -Force
 
       - name: Upload Windows archive
         uses: actions/upload-artifact@v4
         with:
-          name: mditor-windows-x86_64
+          name: prism-windows-x86_64
           path: dist/*.zip
 
   publish:

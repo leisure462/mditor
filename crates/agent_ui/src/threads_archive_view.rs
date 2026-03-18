@@ -64,11 +64,11 @@ impl TimeBucket {
 
     fn label(&self) -> &'static str {
         match self {
-            TimeBucket::Today => "Today",
-            TimeBucket::Yesterday => "Yesterday",
-            TimeBucket::ThisWeek => "This Week",
-            TimeBucket::PastWeek => "Past Week",
-            TimeBucket::Older => "Older",
+            TimeBucket::Today => "今天",
+            TimeBucket::Yesterday => "昨天",
+            TimeBucket::ThisWeek => "本周",
+            TimeBucket::PastWeek => "上周",
+            TimeBucket::Older => "更早",
         }
     }
 }
@@ -134,7 +134,7 @@ impl ThreadsArchiveView {
 
         let filter_editor = cx.new(|cx| {
             let mut editor = Editor::single_line(window, cx);
-            editor.set_placeholder_text("Search archive…", window, cx);
+            editor.set_placeholder_text("搜索归档线程…", window, cx);
             editor
         });
 
@@ -420,8 +420,7 @@ impl ThreadsArchiveView {
                     .as_ref()
                     .map(|h| h.read(cx).supports_delete())
                     .unwrap_or(false);
-                let title: SharedString =
-                    session.title.clone().unwrap_or_else(|| "Untitled".into());
+                let title: SharedString = session.title.clone().unwrap_or_else(|| "未命名".into());
                 let session_info = session.clone();
                 let session_id_for_delete = session.session_id.clone();
                 let focus_handle = self.focus_handle.clone();
@@ -438,13 +437,13 @@ impl ThreadsArchiveView {
                     let months = days / 30;
 
                     if minutes < 60 {
-                        format!("{}m", minutes.max(1))
+                        format!("{}分", minutes.max(1))
                     } else if hours < 24 {
-                        format!("{}h", hours)
+                        format!("{}小时", hours)
                     } else if weeks < 4 {
-                        format!("{}w", weeks.max(1))
+                        format!("{}周", weeks.max(1))
                     } else {
-                        format!("{}mo", months.max(1))
+                        format!("{}个月", months.max(1))
                     }
                 });
 
@@ -498,7 +497,7 @@ impl ThreadsArchiveView {
                                 .tooltip({
                                     move |_window, cx| {
                                         Tooltip::for_action_in(
-                                            "Delete Thread",
+                                            "删除线程",
                                             &RemoveSelectedThread,
                                             &focus_handle,
                                             cx,
@@ -564,7 +563,7 @@ impl ThreadsArchiveView {
             .menu(move |window, cx| {
                 Some(ContextMenu::build(window, cx, |menu, _window, cx| {
                     menu.item(
-                        ContextMenuEntry::new("Zed Agent")
+                        ContextMenuEntry::new("Prism Agent")
                             .icon(IconName::ZedAgent)
                             .icon_color(Color::Muted)
                             .handler({
@@ -668,7 +667,7 @@ impl ThreadsArchiveView {
                     .child(
                         IconButton::new("back", IconName::ArrowLeft)
                             .icon_size(IconSize::Small)
-                            .tooltip(Tooltip::text("Back to Sidebar"))
+                            .tooltip(Tooltip::text("返回侧栏"))
                             .on_click(cx.listener(|this, _, window, cx| {
                                 this.go_back(window, cx);
                             })),
@@ -678,7 +677,7 @@ impl ThreadsArchiveView {
                         this.border_r_1().child(
                             IconButton::new("clear_archive_filter", IconName::Close)
                                 .icon_size(IconSize::Small)
-                                .tooltip(Tooltip::text("Clear Search"))
+                                .tooltip(Tooltip::text("清空搜索"))
                                 .on_click(cx.listener(|this, _, window, cx| {
                                     this.reset_filter_editor_text(window, cx);
                                     this.update_items(cx);
@@ -719,7 +718,7 @@ impl Render for ThreadsArchiveView {
                 .justify_center()
                 .items_center()
                 .child(
-                    Label::new("No threads match your search.")
+                    Label::new("没有匹配搜索条件的线程。")
                         .size(LabelSize::Small)
                         .color(Color::Muted),
                 )
@@ -730,7 +729,7 @@ impl Render for ThreadsArchiveView {
                 .justify_center()
                 .items_center()
                 .child(
-                    Label::new("No archived threads yet.")
+                    Label::new("还没有归档线程。")
                         .size(LabelSize::Small)
                         .color(Color::Muted),
                 )

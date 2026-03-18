@@ -27,7 +27,7 @@ impl OpenUrlModal {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
         let editor = cx.new(|cx| {
             let mut editor = Editor::single_line(window, cx);
-            editor.set_placeholder_text("mditor://...", window, cx);
+            editor.set_placeholder_text("prism://...", window, cx);
             editor
         });
 
@@ -53,8 +53,8 @@ impl OpenUrlModal {
             return;
         }
 
-        // Handle mditor:// URLs internally.
-        if url.starts_with("mditor://") || url.starts_with("mditor-cli://") {
+        // Handle prism:// URLs internally.
+        if url.starts_with("prism://") || url.starts_with("prism-cli://") {
             OpenListener::global(cx).open(RawOpenRequest {
                 urls: vec![url],
                 ..Default::default()

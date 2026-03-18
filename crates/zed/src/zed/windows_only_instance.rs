@@ -110,13 +110,13 @@ fn retrieve_message_from_pipe_inner(pipe: HANDLE) -> anyhow::Result<String> {
 // This part of code is mostly from crates/cli/src/main.rs
 fn send_args_to_instance(args: &Args) -> anyhow::Result<()> {
     if let Some(dock_menu_action_idx) = args.dock_action {
-        let url = format!("mditor-dock-action://{}", dock_menu_action_idx);
+        let url = format!("prism-dock-action://{}", dock_menu_action_idx);
         return write_message_to_instance_pipe(url.as_bytes());
     }
 
     let (server, server_name) =
-        IpcOneShotServer::<IpcHandshake>::new().context("Handshake before Mditor spawn")?;
-    let url = format!("mditor-cli://{server_name}");
+        IpcOneShotServer::<IpcHandshake>::new().context("Handshake before Prism spawn")?;
+    let url = format!("prism-cli://{server_name}");
 
     let request = {
         let mut paths = vec![];
@@ -126,7 +126,7 @@ fn send_args_to_instance(args: &Args) -> anyhow::Result<()> {
             match std::fs::canonicalize(&path) {
                 Ok(path) => paths.push(path.to_string_lossy().into_owned()),
                 Err(error) => {
-                    if path.starts_with("mditor://")
+                    if path.starts_with("prism://")
                         || path.starts_with("http://")
                         || path.starts_with("https://")
                         || path.starts_with("file://")
@@ -171,7 +171,7 @@ fn send_args_to_instance(args: &Args) -> anyhow::Result<()> {
         .spawn({
             let exit_status = exit_status.clone();
             move || {
-                let (_, handshake) = server.accept().context("Handshake after Mditor spawn")?;
+                let (_, handshake) = server.accept().context("Handshake after Prism spawn")?;
                 let (tx, rx) = (handshake.requests, handshake.responses);
 
                 tx.send(request)?;

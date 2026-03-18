@@ -318,21 +318,21 @@ impl ConfigOptionSelector {
 
     fn current_value_name(&self) -> String {
         let Some(option) = self.current_option() else {
-            return "Unknown".to_string();
+            return "未知".to_string();
         };
 
         match &option.kind {
             acp::SessionConfigKind::Select(select) => {
                 find_option_name(&select.options, &select.current_value)
-                    .unwrap_or_else(|| "Unknown".to_string())
+                    .unwrap_or_else(|| "未知".to_string())
             }
-            _ => "Unknown".to_string(),
+            _ => "未知".to_string(),
         }
     }
 
     fn render_trigger_button(&self, _window: &mut Window, _cx: &mut Context<Self>) -> Button {
         let Some(option) = self.current_option() else {
-            return Button::new("config-option-trigger", "Unknown")
+            return Button::new("config-option-trigger", "未知")
                 .label_size(LabelSize::Small)
                 .color(Color::Muted)
                 .disabled(true);
@@ -498,7 +498,7 @@ impl PickerDelegate for ConfigOptionPickerDelegate {
     }
 
     fn placeholder_text(&self, _window: &mut Window, _cx: &mut App) -> Arc<str> {
-        "Select an option…".into()
+        "选择一个选项…".into()
     }
 
     fn update_matches(
@@ -652,9 +652,9 @@ impl PickerDelegate for ConfigOptionPickerDelegate {
                                 }))
                                 .end_hover_slot(div().pr_1p5().child({
                                     let (icon, color, tooltip) = if is_favorite {
-                                        (IconName::StarFilled, Color::Accent, "Unfavorite")
+                                        (IconName::StarFilled, Color::Accent, "取消收藏")
                                     } else {
-                                        (IconName::Star, Color::Default, "Favorite")
+                                        (IconName::Star, Color::Default, "收藏")
                                     };
 
                                     let config_id = self.config_id.clone();

@@ -1,4 +1,4 @@
-//! Paths to locations used by Mditor.
+//! Paths to locations used by Prism.
 
 use std::env;
 use std::path::{Path, PathBuf};
@@ -10,12 +10,12 @@ use util::rel_path::RelPath;
 /// A default editorconfig file name to use when resolving project settings.
 pub const EDITORCONFIG_NAME: &str = ".editorconfig";
 
-const APP_NAME_UPPER: &str = "Mditor";
-const APP_NAME_LOWER: &str = "mditor";
-const REMOTE_SERVER_DIR_NAME: &str = ".mditor_server";
-const REMOTE_WSL_SERVER_DIR_NAME: &str = ".mditor_wsl_server";
-const LOG_FILE_NAME: &str = "mditor.log";
-const OLD_LOG_FILE_NAME: &str = "mditor.log.old";
+const APP_NAME_UPPER: &str = "Prism";
+const APP_NAME_LOWER: &str = "prism";
+const REMOTE_SERVER_DIR_NAME: &str = ".prism_server";
+const REMOTE_WSL_SERVER_DIR_NAME: &str = ".prism_wsl_server";
+const LOG_FILE_NAME: &str = "prism.log";
+const OLD_LOG_FILE_NAME: &str = "prism.log.old";
 
 /// A custom data directory override, set only by `set_custom_data_dir`.
 /// This is used to override the default data directory location.
@@ -24,19 +24,19 @@ static CUSTOM_DATA_DIR: OnceLock<PathBuf> = OnceLock::new();
 
 /// The resolved data directory, combining custom override or platform defaults.
 /// This is set once and cached for subsequent calls.
-/// On macOS, this is `~/Library/Application Support/Mditor`.
-/// On Linux/FreeBSD, this is `$XDG_DATA_HOME/mditor`.
-/// On Windows, this is `%LOCALAPPDATA%\Mditor`.
+/// On macOS, this is `~/Library/Application Support/Prism`.
+/// On Linux/FreeBSD, this is `$XDG_DATA_HOME/prism`.
+/// On Windows, this is `%LOCALAPPDATA%\Prism`.
 static CURRENT_DATA_DIR: OnceLock<PathBuf> = OnceLock::new();
 
 /// The resolved config directory, combining custom override or platform defaults.
 /// This is set once and cached for subsequent calls.
-/// On macOS, this is `~/.config/mditor`.
-/// On Linux/FreeBSD, this is `$XDG_CONFIG_HOME/mditor`.
-/// On Windows, this is `%APPDATA%\Mditor`.
+/// On macOS, this is `~/.config/prism`.
+/// On Linux/FreeBSD, this is `$XDG_CONFIG_HOME/prism`.
+/// On Windows, this is `%APPDATA%\Prism`.
 static CONFIG_DIR: OnceLock<PathBuf> = OnceLock::new();
 
-/// Returns the relative path to the mditor_server directory on the ssh host.
+/// Returns the relative path to the prism_server directory on the ssh host.
 pub fn remote_server_dir_relative() -> &'static RelPath {
     static CACHED: LazyLock<&'static RelPath> =
         LazyLock::new(|| RelPath::unix(REMOTE_SERVER_DIR_NAME).unwrap());
@@ -44,7 +44,7 @@ pub fn remote_server_dir_relative() -> &'static RelPath {
 }
 
 // Remove this once 223 goes stable
-/// Returns the relative path to the mditor_wsl_server directory on the wsl host.
+/// Returns the relative path to the prism_wsl_server directory on the wsl host.
 pub fn remote_wsl_server_dir_relative() -> &'static RelPath {
     static CACHED: LazyLock<&'static RelPath> =
         LazyLock::new(|| RelPath::unix(REMOTE_WSL_SERVER_DIR_NAME).unwrap());
@@ -83,7 +83,7 @@ pub fn set_custom_data_dir(dir: &str) -> &'static PathBuf {
     })
 }
 
-/// Returns the path to the configuration directory used by Mditor.
+/// Returns the path to the configuration directory used by Prism.
 pub fn config_dir() -> &'static PathBuf {
     CONFIG_DIR.get_or_init(|| {
         if let Some(custom_dir) = CUSTOM_DATA_DIR.get() {
@@ -105,7 +105,7 @@ pub fn config_dir() -> &'static PathBuf {
     })
 }
 
-/// Returns the path to the data directory used by Mditor.
+/// Returns the path to the data directory used by Prism.
 pub fn data_dir() -> &'static PathBuf {
     CURRENT_DATA_DIR.get_or_init(|| {
         if let Some(custom_dir) = CUSTOM_DATA_DIR.get() {
@@ -154,7 +154,7 @@ pub fn state_dir() -> &'static PathBuf {
     })
 }
 
-/// Returns the path to the temp directory used by Mditor.
+/// Returns the path to the temp directory used by Prism.
 pub fn temp_dir() -> &'static PathBuf {
     static TEMP_DIR: OnceLock<PathBuf> = OnceLock::new();
     TEMP_DIR.get_or_init(|| {
@@ -201,19 +201,19 @@ pub fn logs_dir() -> &'static PathBuf {
     })
 }
 
-/// Returns the path to the Mditor server directory on this SSH host.
+/// Returns the path to the Prism server directory on this SSH host.
 pub fn remote_server_state_dir() -> &'static PathBuf {
     static REMOTE_SERVER_STATE: OnceLock<PathBuf> = OnceLock::new();
     REMOTE_SERVER_STATE.get_or_init(|| data_dir().join("server_state"))
 }
 
-/// Returns the path to the `mditor.log` file.
+/// Returns the path to the `prism.log` file.
 pub fn log_file() -> &'static PathBuf {
     static LOG_FILE: OnceLock<PathBuf> = OnceLock::new();
     LOG_FILE.get_or_init(|| logs_dir().join(LOG_FILE_NAME))
 }
 
-/// Returns the path to the `mditor.log.old` file.
+/// Returns the path to the `prism.log.old` file.
 pub fn old_log_file() -> &'static PathBuf {
     static OLD_LOG_FILE: OnceLock<PathBuf> = OnceLock::new();
     OLD_LOG_FILE.get_or_init(|| logs_dir().join(OLD_LOG_FILE_NAME))
@@ -400,7 +400,7 @@ pub fn embeddings_dir() -> &'static PathBuf {
 
 /// Returns the path to the languages directory.
 ///
-/// This is where language servers are downloaded to for languages built-in to Mditor.
+/// This is where language servers are downloaded to for languages built-in to Prism.
 pub fn languages_dir() -> &'static PathBuf {
     static LANGUAGES_DIR: OnceLock<PathBuf> = OnceLock::new();
     LANGUAGES_DIR.get_or_init(|| data_dir().join("languages"))
@@ -408,7 +408,7 @@ pub fn languages_dir() -> &'static PathBuf {
 
 /// Returns the path to the debug adapters directory
 ///
-/// This is where debug adapters are downloaded to for DAPs that are built-in to Mditor.
+/// This is where debug adapters are downloaded to for DAPs that are built-in to Prism.
 pub fn debug_adapters_dir() -> &'static PathBuf {
     static DEBUG_ADAPTERS_DIR: OnceLock<PathBuf> = OnceLock::new();
     DEBUG_ADAPTERS_DIR.get_or_init(|| data_dir().join("debug_adapters"))
@@ -446,9 +446,9 @@ pub fn devcontainer_dir() -> &'static PathBuf {
     DEVCONTAINER_DIR.get_or_init(|| data_dir().join("devcontainer"))
 }
 
-/// Returns the relative path to a `.mditor` folder within a project.
+/// Returns the relative path to a `.prism` folder within a project.
 pub fn local_settings_folder_name() -> &'static str {
-    ".mditor"
+    ".prism"
 }
 
 /// Returns the relative path to a `.vscode` folder within a project.
@@ -459,14 +459,14 @@ pub fn local_vscode_folder_name() -> &'static str {
 /// Returns the relative path to a `settings.json` file within a project.
 pub fn local_settings_file_relative_path() -> &'static RelPath {
     static CACHED: LazyLock<&'static RelPath> =
-        LazyLock::new(|| RelPath::unix(".mditor/settings.json").unwrap());
+        LazyLock::new(|| RelPath::unix(".prism/settings.json").unwrap());
     *CACHED
 }
 
 /// Returns the relative path to a `tasks.json` file within a project.
 pub fn local_tasks_file_relative_path() -> &'static RelPath {
     static CACHED: LazyLock<&'static RelPath> =
-        LazyLock::new(|| RelPath::unix(".mditor/tasks.json").unwrap());
+        LazyLock::new(|| RelPath::unix(".prism/tasks.json").unwrap());
     *CACHED
 }
 
@@ -486,10 +486,10 @@ pub fn task_file_name() -> &'static str {
 }
 
 /// Returns the relative path to a `debug.json` file within a project.
-/// .mditor/debug.json
+/// .prism/debug.json
 pub fn local_debug_file_relative_path() -> &'static RelPath {
     static CACHED: LazyLock<&'static RelPath> =
-        LazyLock::new(|| RelPath::unix(".mditor/debug.json").unwrap());
+        LazyLock::new(|| RelPath::unix(".prism/debug.json").unwrap());
     *CACHED
 }
 

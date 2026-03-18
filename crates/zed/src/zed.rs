@@ -5,7 +5,6 @@ mod migrate;
 mod open_listener;
 mod open_url_modal;
 mod quick_action_bar;
-pub mod telemetry_log;
 #[cfg(all(target_os = "macos", any(test, feature = "test-support")))]
 pub mod visual_tests;
 #[cfg(target_os = "windows")]
@@ -16,7 +15,7 @@ use anyhow::Context as _;
 pub use app_menus::*;
 use assets::Assets;
 use breadcrumbs::Breadcrumbs;
-use collections::VecDeque;
+use collections::{HashSet, VecDeque};
 use editor::{Editor, MultiBuffer};
 use feature_flags::{FeatureFlagAppExt as _, PanicFeatureFlag};
 use fs::Fs;
@@ -25,13 +24,14 @@ use futures::future::Either;
 use futures::{StreamExt, channel::mpsc, select_biased};
 use gpui::{
     Action, App, AppContext as _, AsyncWindowContext, Context, DismissEvent, Element, Entity,
-    Focusable, KeyBinding, ParentElement, PathPromptOptions, PromptLevel, ReadGlobal, SharedString,
-    Task, TitlebarOptions, UpdateGlobal, WeakEntity, Window, WindowHandle, WindowKind,
-    WindowOptions, actions, image_cache, point, px, retain_all,
+    EntityId, Focusable, Global, KeyBinding, ParentElement, PathPromptOptions, PromptLevel,
+    ReadGlobal, SharedString, Task, TitlebarOptions, UpdateGlobal, WeakEntity, Window,
+    WindowHandle, WindowKind, WindowOptions, actions, image_cache, point, px, retain_all,
 };
 use image_viewer::ImageInfo;
 use language::Capability;
 use markdown::{Markdown, MarkdownElement, MarkdownFont, MarkdownStyle};
+use markdown_preview::markdown_preview_view::MarkdownPreviewView;
 use migrate::{MigrationBanner, MigrationEvent, MigrationNotification, MigrationType};
 use migrator::migrate_keymap;
 pub use open_listener::*;
@@ -76,7 +76,30 @@ use workspace::{
 use workspace::{Pane, notifications::DetachAndPromptErr};
 use zed_actions::{OpenBrowser, OpenDocs, OpenServerSettings, OpenSettingsFile, OpenZedUrl, Quit};
 
-const MDITOR_DOCS_URL: &str = "https://github.com/leisure462/mditor#readme";
+const PRISM_DOCS_URL: &str = "https://github.com/leisure462/mditor#readme";
+
+#[derive(Default)]
+pub(crate) struct MarkdownSourceModeState {
+    editors: HashSet<EntityId>,
+}
+
+impl Global for MarkdownSourceModeState {}
+
+pub(crate) fn set_markdown_source_mode(editor_id: EntityId, enabled: bool, cx: &mut App) {
+    cx.update_global::<MarkdownSourceModeState, _>(|state, _| {
+        if enabled {
+            state.editors.insert(editor_id);
+        } else {
+            state.editors.remove(&editor_id);
+        }
+    });
+}
+
+pub(crate) fn markdown_source_mode_enabled(editor_id: EntityId, cx: &App) -> bool {
+    cx.global::<MarkdownSourceModeState>()
+        .editors
+        .contains(&editor_id)
+}
 
 actions!(
     zed,
@@ -117,6 +140,7 @@ actions!(
 );
 
 pub fn init(cx: &mut App) {
+    cx.set_global(MarkdownSourceModeState::default());
     title_bar::init(cx);
 
     #[cfg(target_os = "macos")]
@@ -281,7 +305,7 @@ pub fn build_window_options(display_uuid: Option<Uuid>, cx: &mut App) -> WindowO
             height: px(240.0),
         }),
         tabbing_identifier: if use_system_window_tabs {
-            Some(String::from("mditor"))
+            Some(String::from("prism"))
         } else {
             None
         },
@@ -334,6 +358,11 @@ pub fn initialize_workspace(
                 workspace::Event::PaneAdded(pane) => {
                     initialize_pane(workspace, pane, window, cx);
                 }
+                workspace::Event::ActiveItemChanged | workspace::Event::ItemAdded { .. } => {
+                    cx.defer_in(window, |workspace, window, cx| {
+                        maybe_open_markdown_preview_for_active_item(workspace, window, cx);
+                    });
+                }
                 workspace::Event::OpenBundledFile {
                     text,
                     title,
@@ -343,6 +372,10 @@ pub fn initialize_workspace(
             }
         })
         .detach();
+
+        cx.defer_in(window, |workspace, window, cx| {
+            maybe_open_markdown_preview_for_active_item(workspace, window, cx);
+        });
 
         #[cfg(not(any(test, target_os = "macos")))]
         initialize_file_watcher(window, cx);
@@ -466,7 +499,7 @@ fn show_software_emulation_warning_if_needed(
         };
         let message = format!(
             db::indoc! {r#"
-            Mditor uses {} for rendering and requires a compatible GPU.
+            Prism uses {} for rendering and requires a compatible GPU.
 
             Currently you are using a software emulated GPU ({}) which
             will result in awful performance.
@@ -619,7 +652,7 @@ fn register_actions(
     cx: &mut Context<Workspace>,
 ) {
     workspace
-        .register_action(|_, _: &OpenDocs, _, cx| cx.open_url(MDITOR_DOCS_URL))
+        .register_action(|_, _: &OpenDocs, _, cx| cx.open_url(PRISM_DOCS_URL))
         .register_action(|_, _: &Minimize, window, _| {
             window.minimize_window();
         })
@@ -808,7 +841,7 @@ fn register_actions(
                         Toast::new(
                             NotificationId::unique::<RegisterZedScheme>(),
                             format!(
-                                "mditor:// links will now open in {}.",
+                                "prism:// links will now open in {}.",
                                 ReleaseChannel::global(cx).display_name()
                             ),
                         ),
@@ -818,7 +851,7 @@ fn register_actions(
                 Ok(())
             })
             .detach_and_prompt_err(
-                "Error registering mditor:// scheme",
+                "Error registering prism:// scheme",
                 window,
                 cx,
                 |_, _, _| None,
@@ -1011,6 +1044,31 @@ fn initialize_pane(
             let image_view_toolbar = cx.new(|_| image_viewer::ImageViewToolbarControls::new());
             toolbar.add_item(image_view_toolbar, window, cx);
         })
+    });
+}
+
+fn maybe_open_markdown_preview_for_active_item(
+    workspace: &mut Workspace,
+    window: &mut Window,
+    cx: &mut Context<Workspace>,
+) {
+    let Some(active_item) = workspace.active_item(cx) else {
+        return;
+    };
+    let Some(editor) = active_item.act_as::<Editor>(cx) else {
+        return;
+    };
+    if !MarkdownPreviewView::is_markdown_file(&editor, cx) {
+        return;
+    }
+    if markdown_source_mode_enabled(editor.entity_id(), cx) {
+        return;
+    }
+
+    let editor_item_id = active_item.item_id();
+    MarkdownPreviewView::open_preview_for_editor(workspace, editor, window, cx);
+    workspace.active_pane().update(cx, |pane, cx| {
+        pane.remove_item(editor_item_id, false, true, window, cx);
     });
 }
 
@@ -1608,8 +1666,6 @@ fn reload_keymaps(cx: &mut App, mut user_key_bindings: Vec<KeyBinding>) {
         "New Window",
         workspace::NewWindow,
     )]);
-    // todo: nicer api here?
-    keymap_editor::KeymapEventChannel::trigger_keymap_changed(cx);
 }
 
 pub fn load_default_keymap(cx: &mut App) {
@@ -1886,7 +1942,7 @@ fn open_settings_file(
 /// Eagerly loads the active theme and icon theme based on the selections in the
 /// theme settings.
 ///
-/// Mditor only ships bundled themes, so there are no extension themes to eager load.
+/// Prism only ships bundled themes, so there are no extension themes to eager load.
 pub(crate) fn eager_load_active_theme_and_icon_theme(_fs: Arc<dyn Fs>, _cx: &mut App) {}
 
 #[cfg(test)]
@@ -4445,7 +4501,6 @@ mod tests {
                 "image_viewer",
                 "inline_assistant",
                 "journal",
-                "keymap_editor",
                 "keystroke_input",
                 "language_selector",
                 "welcome",

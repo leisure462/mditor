@@ -61,17 +61,7 @@ impl MarkdownPreviewView {
     pub fn register(workspace: &mut Workspace, _window: &mut Window, _cx: &mut Context<Workspace>) {
         workspace.register_action(move |workspace, _: &OpenPreview, window, cx| {
             if let Some(editor) = Self::resolve_active_item_as_markdown_editor(workspace, cx) {
-                let view = Self::create_markdown_view(workspace, editor.clone(), window, cx);
-                workspace.active_pane().update(cx, |pane, cx| {
-                    if let Some(existing_view_idx) =
-                        Self::find_existing_independent_preview_item_idx(pane, &editor, cx)
-                    {
-                        pane.activate_item(existing_view_idx, true, true, window, cx);
-                    } else {
-                        pane.add_item(Box::new(view.clone()), true, true, None, window, cx)
-                    }
-                });
-                cx.notify();
+                Self::open_preview_for_editor(workspace, editor, window, cx);
             }
         });
 
@@ -192,6 +182,25 @@ impl MarkdownPreviewView {
             window,
             cx,
         )
+    }
+
+    pub fn open_preview_for_editor(
+        workspace: &mut Workspace,
+        editor: Entity<Editor>,
+        window: &mut Window,
+        cx: &mut Context<Workspace>,
+    ) {
+        let view = Self::create_markdown_view(workspace, editor.clone(), window, cx);
+        workspace.active_pane().update(cx, |pane, cx| {
+            if let Some(existing_view_idx) =
+                Self::find_existing_independent_preview_item_idx(pane, &editor, cx)
+            {
+                pane.activate_item(existing_view_idx, true, true, window, cx);
+            } else {
+                pane.add_item(Box::new(view.clone()), true, true, None, window, cx)
+            }
+        });
+        cx.notify();
     }
 
     fn create_following_markdown_view(
@@ -550,9 +559,12 @@ impl Item for MarkdownPreviewView {
             .map(|editor_state| {
                 let buffer = editor_state.editor.read(cx).buffer().read(cx);
                 let title = buffer.title(cx);
-                format!("Preview {}", title).into()
+                match self.mode {
+                    MarkdownPreviewMode::Default => title.to_string().into(),
+                    MarkdownPreviewMode::Follow => format!("预览 {}", title).into(),
+                }
             })
-            .unwrap_or_else(|| SharedString::from("Markdown Preview"))
+            .unwrap_or_else(|| SharedString::from("Markdown 预览"))
     }
 
     fn telemetry_event_text(&self) -> Option<&'static str> {

@@ -73,7 +73,7 @@ static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 const RESTORE_PREVIOUS_WORKSPACES_ON_STARTUP: bool = false;
 
 fn files_not_created_on_launch(errors: HashMap<io::ErrorKind, Vec<&Path>>) {
-    let message = "Mditor failed to launch";
+    let message = "Prism failed to launch";
     let error_details = errors
         .into_iter()
         .flat_map(|(kind, paths)| {
@@ -135,7 +135,7 @@ fn fail_to_open_window_async(e: anyhow::Error, cx: &mut AsyncApp) {
 
 fn fail_to_open_window(e: anyhow::Error, _cx: &mut App) {
     eprintln!(
-        "Mditor failed to open a window: {e:?}. See https://zed.dev/docs/linux for troubleshooting steps."
+        "Prism failed to open a window: {e:?}. See https://github.com/leisure462/mditor#readme for troubleshooting steps."
     );
     #[cfg(not(any(target_os = "linux", target_os = "freebsd")))]
     {
@@ -151,14 +151,14 @@ fn fail_to_open_window(e: anyhow::Error, _cx: &mut App) {
                 process::exit(1);
             };
 
-            let notification_id = "dev.mditor.Oops";
+            let notification_id = "dev.prism.Oops";
             proxy
                 .add_notification(
                     notification_id,
-                    Notification::new("Mditor failed to launch")
+                    Notification::new("Prism failed to launch")
                         .body(Some(
                             format!(
-                                "{e:?}. See https://zed.dev/docs/linux for troubleshooting steps."
+                                "{e:?}. See https://github.com/leisure462/mditor#readme for troubleshooting steps."
                             )
                             .as_str(),
                         ))
@@ -280,14 +280,14 @@ fn main() {
 
     let args = Args::parse();
 
-    // `mditor --askpass` Makes Mditor operate in nc/netcat mode for use with askpass
+    // `prism --askpass` Makes Prism operate in nc/netcat mode for use with askpass
     #[cfg(not(target_os = "windows"))]
     if let Some(socket) = &args.askpass {
         askpass::main(socket);
         return;
     }
 
-    // `mditor --crash-handler` Makes Mditor operate in minidump crash handler mode
+    // `prism --crash-handler` Makes Prism operate in minidump crash handler mode
     if let Some(socket) = &args.crash_handler {
         crashes::crash_server(socket.as_path());
         return;
@@ -317,7 +317,7 @@ fn main() {
         return;
     }
 
-    // `mditor --nc` Makes Mditor operate in nc/netcat mode for use with MCP
+    // `prism --nc` Makes Prism operate in nc/netcat mode for use with MCP
     if let Some(socket) = &args.nc {
         match nc::main(socket) {
             Ok(()) => return,
@@ -337,7 +337,7 @@ fn main() {
         }
     }
 
-    // `mditor --printenv` Outputs environment variables as JSON to stdout
+    // `prism --printenv` Outputs environment variables as JSON to stdout
     if args.printenv {
         util::shell_env::print_env();
         return;
@@ -394,7 +394,7 @@ fn main() {
             app_commit_sha,
             *release_channel::RELEASE_CHANNEL,
         );
-        println!("Mditor System Specs (from CLI):\n{}", system_specs);
+        println!("Prism System Specs (from CLI):\n{}", system_specs);
         return;
     }
 
@@ -406,7 +406,7 @@ fn main() {
         .unwrap();
 
     log::info!(
-        "========== starting mditor version {}, sha {} ==========",
+        "========== starting prism version {}, sha {} ==========",
         app_version,
         app_commit_sha
             .as_ref()
@@ -438,7 +438,7 @@ fn main() {
                 app_version.patch,
             )
             .to_string(),
-            binary: "mditor".to_string(),
+            binary: "prism".to_string(),
             release_channel: release_channel::RELEASE_CHANNEL_NAME.clone(),
             commit_sha: app_commit_sha
                 .as_ref()
@@ -474,7 +474,7 @@ fn main() {
         }
     };
     if failed_single_instance_check {
-        println!("mditor is already running");
+        println!("prism is already running");
         return;
     }
 
@@ -575,7 +575,7 @@ fn main() {
         handle_keymap_file_changes(user_keymap_file_rx, user_keymap_watcher, cx);
 
         let user_agent = format!(
-            "Mditor/{} ({}; {})",
+            "Prism/{} ({}; {})",
             AppVersion::global(cx),
             std::env::consts::OS,
             std::env::consts::ARCH
@@ -705,7 +705,6 @@ fn main() {
         );
         language_model::init(app_state.user_store.clone(), app_state.client.clone(), cx);
         language_models::init(app_state.user_store.clone(), app_state.client.clone(), cx);
-        zed::telemetry_log::init(cx);
         web_search::init(cx);
         web_search_providers::init(app_state.client.clone(), app_state.user_store.clone(), cx);
         snippet_provider::init(cx);
@@ -750,7 +749,6 @@ fn main() {
         theme_selector::init(cx);
         markdown_preview::init(cx);
         settings_ui::init(cx);
-        keymap_editor::init(cx);
         #[cfg(target_os = "windows")]
         etw_tracing::init(cx);
 
@@ -1003,8 +1001,8 @@ fn handle_open_request(request: OpenRequest, app_state: Arc<AppState>, cx: &mut 
                 cx.perform_dock_menu_action(index);
             }
             OpenRequestKind::Setting { setting_path } => {
-                // mditor://settings/languages/$(language)/tab_size  - DONT SUPPORT
-                // mditor://settings/languages/Rust/tab_size  - SUPPORT
+                // prism://settings/languages/$(language)/tab_size  - DONT SUPPORT
+                // prism://settings/languages/Rust/tab_size  - SUPPORT
                 // languages.$(language).tab_size
                 // [ languages $(language) tab_size]
                 cx.spawn(async move |cx| {
@@ -1465,14 +1463,14 @@ fn stdout_is_a_pty() -> bool {
 }
 
 #[derive(Parser, Debug)]
-#[command(name = "mditor", disable_version_flag = true, max_term_width = 100)]
+#[command(name = "prism", disable_version_flag = true, max_term_width = 100)]
 struct Args {
     /// A sequence of space-separated paths or urls that you want to open.
     ///
     /// Use `path:line:row` syntax to open a file at a specific location.
     /// Non-existing paths and directories will ignore `:line:row` suffix.
     ///
-    /// URLs can either be `file://` or `mditor://` scheme, or relative to <https://zed.dev>.
+    /// URLs can either be `file://` or `prism://` scheme, or relative to the project repository.
     paths_or_urls: Vec<String>,
 
     /// Pairs of file paths to diff. Can be specified multiple times.
@@ -1483,14 +1481,14 @@ struct Args {
     /// Sets a custom directory for all user data (e.g., database, themes, logs).
     ///
     /// This overrides the default platform-specific data directory location.
-    /// On macOS, the default is `~/Library/Application Support/Mditor`.
-    /// On Linux/FreeBSD, the default is `$XDG_DATA_HOME/mditor`.
-    /// On Windows, the default is `%LOCALAPPDATA%\Mditor`.
+    /// On macOS, the default is `~/Library/Application Support/Prism`.
+    /// On Linux/FreeBSD, the default is `$XDG_DATA_HOME/prism`.
+    /// On Windows, the default is `%LOCALAPPDATA%\Prism`.
     #[arg(long, value_name = "DIR", verbatim_doc_comment)]
     user_data_dir: Option<String>,
 
     /// The username and WSL distribution to use when opening paths. If not specified,
-    /// Mditor will attempt to open the paths directly.
+    /// Prism will attempt to open the paths directly.
     ///
     /// The username is optional, and if not specified, the default user for the distribution
     /// will be used.
@@ -1502,29 +1500,29 @@ struct Args {
     #[arg(long, value_name = "USER@DISTRO")]
     wsl: Option<String>,
 
-    /// Instructs mditor to run as a dev server on this machine. (not implemented)
+    /// Instructs prism to run as a dev server on this machine. (not implemented)
     #[arg(long)]
     dev_server_token: Option<String>,
 
     /// Prints system specs.
     ///
     /// Useful for submitting issues on GitHub when encountering a bug that
-    /// prevents Mditor from starting, so you can't run `mditor: copy system specs to
+    /// prevents Prism from starting, so you can't run `prism: copy system specs to
     /// clipboard`
     #[arg(long)]
     system_specs: bool,
 
     /// Used for the MCP Server, to remove the need for netcat as a dependency,
-    /// by having Mditor act like netcat communicating over a Unix socket.
+    /// by having Prism act like netcat communicating over a Unix socket.
     #[arg(long, hide = true)]
     nc: Option<String>,
 
-    /// Used for recording minidumps on crashes by having Mditor run a separate
+    /// Used for recording minidumps on crashes by having Prism run a separate
     /// process communicating over a socket.
     #[arg(long, hide = true)]
     crash_handler: Option<PathBuf>,
 
-    /// Run mditor in the foreground, only used on Windows, to match the behavior on macOS.
+    /// Run prism in the foreground, only used on Windows, to match the behavior on macOS.
     #[arg(long)]
     #[cfg(target_os = "windows")]
     #[arg(hide = true)]
@@ -1537,7 +1535,7 @@ struct Args {
     dock_action: Option<usize>,
 
     /// Used for SSH/Git password authentication, to remove the need for netcat as a dependency,
-    /// by having Mditor act like netcat communicating over a Unix socket.
+    /// by having Prism act like netcat communicating over a Unix socket.
     #[arg(long)]
     #[cfg(not(target_os = "windows"))]
     #[arg(hide = true)]
@@ -1555,7 +1553,7 @@ struct Args {
     #[arg(long, hide = true)]
     record_etw_trace: bool,
 
-    /// The PID of the Mditor process to trace for heap analysis.
+    /// The PID of the Prism process to trace for heap analysis.
     #[cfg(target_os = "windows")]
     #[arg(long, hide = true, allow_hyphen_values = true)]
     etw_zed_pid: Option<i64>,
@@ -1565,7 +1563,7 @@ struct Args {
     #[arg(long, hide = true)]
     etw_output: Option<PathBuf>,
 
-    /// Unix socket path for IPC with the parent Mditor process.
+    /// Unix socket path for IPC with the parent Prism process.
     #[cfg(target_os = "windows")]
     #[arg(long, hide = true)]
     etw_socket: Option<String>,
@@ -1590,8 +1588,8 @@ fn parse_url_arg(arg: &str, cx: &App) -> String {
         Ok(path) => format!("file://{}", path.display()),
         Err(_) => {
             if arg.starts_with("file://")
-                || arg.starts_with("mditor://")
-                || arg.starts_with("mditor-cli://")
+                || arg.starts_with("prism://")
+                || arg.starts_with("prism-cli://")
                 || arg.starts_with("ssh://")
                 || parse_zed_link(arg, cx).is_some()
             {

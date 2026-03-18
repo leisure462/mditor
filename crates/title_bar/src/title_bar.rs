@@ -305,9 +305,9 @@ impl TitleBar {
 
         let banner = cx.new(|cx| {
             OnboardingBanner::new(
-                "Mditor Onboarding",
+                "Prism Onboarding",
                 IconName::File,
-                "Mditor",
+                "Prism",
                 None,
                 workspace::RestoreBanner.boxed_clone(),
                 cx,
@@ -439,10 +439,10 @@ impl TitleBar {
         let (nickname, tooltip_title, icon) = match options {
             RemoteConnectionOptions::Ssh(options) => (
                 options.nickname.map(|nick| nick.into()),
-                "Remote Project",
+                "远程项目",
                 IconName::Server,
             ),
-            RemoteConnectionOptions::Wsl(_) => (None, "Remote Project", IconName::Linux),
+            RemoteConnectionOptions::Wsl(_) => (None, "远程项目", IconName::Linux),
             RemoteConnectionOptions::Docker(_dev_container_connection) => {
                 (None, "Dev Container", IconName::Box)
             }
@@ -453,18 +453,18 @@ impl TitleBar {
         let nickname = nickname.unwrap_or_else(|| host.clone());
 
         let (indicator_color, meta) = match self.project.read(cx).remote_connection_state(cx)? {
-            remote::ConnectionState::Connecting => (Color::Info, format!("Connecting to: {host}")),
-            remote::ConnectionState::Connected => (Color::Success, format!("Connected to: {host}")),
+            remote::ConnectionState::Connecting => (Color::Info, format!("正在连接：{host}")),
+            remote::ConnectionState::Connected => (Color::Success, format!("已连接：{host}")),
             remote::ConnectionState::HeartbeatMissed => (
                 Color::Warning,
-                format!("Connection attempt to {host} missed. Retrying..."),
+                format!("与 {host} 的连接尝试未成功，正在重试..."),
             ),
             remote::ConnectionState::Reconnecting => (
                 Color::Warning,
-                format!("Lost connection to {host}. Reconnecting..."),
+                format!("与 {host} 的连接已断开，正在重新连接..."),
             ),
             remote::ConnectionState::Disconnected => {
-                (Color::Error, format!("Disconnected from {host}"))
+                (Color::Error, format!("已从 {host} 断开连接"))
             }
         };
 
@@ -539,7 +539,7 @@ impl TitleBar {
             return None;
         }
 
-        let button = Button::new("restricted_mode_trigger", "Restricted Mode")
+        let button = Button::new("restricted_mode_trigger", "受限模式")
             .style(ButtonStyle::Tinted(TintColor::Warning))
             .label_size(LabelSize::Small)
             .color(Color::Warning)
@@ -550,9 +550,9 @@ impl TitleBar {
             )
             .tooltip(|_, cx| {
                 Tooltip::with_meta(
-                    "You're in Restricted Mode",
+                    "你当前处于受限模式",
                     Some(&ToggleWorktreeSecurity),
-                    "Mark this project as trusted and unlock all features",
+                    "将此项目标记为受信任并解锁全部功能",
                     cx,
                 )
             })
@@ -581,7 +581,7 @@ impl TitleBar {
 
         if self.project.read(cx).is_disconnected(cx) {
             return Some(
-                Button::new("disconnected", "Disconnected")
+                Button::new("disconnected", "已断开连接")
                     .disabled(true)
                     .color(Color::Disabled)
                     .label_size(LabelSize::Small)
@@ -602,12 +602,10 @@ impl TitleBar {
                 .color(Color::Player(participant_index.0))
                 .label_size(LabelSize::Small)
                 .tooltip(move |_, cx| {
-                    let tooltip_title = format!(
-                        "{} is sharing this project. Click to follow.",
-                        host_user.github_login
-                    );
+                    let tooltip_title =
+                        format!("{} 正在共享此项目。点击即可跟随。", host_user.github_login);
 
-                    Tooltip::with_meta(tooltip_title, None, "Click to Follow", cx)
+                    Tooltip::with_meta(tooltip_title, None, "点击以跟随", cx)
                 })
                 .on_click({
                     let host_peer_id = host.peer_id;
@@ -636,7 +634,7 @@ impl TitleBar {
         let display_name = if let Some(ref name) = name {
             util::truncate_and_trailoff(name, MAX_PROJECT_NAME_LENGTH)
         } else {
-            "Open Recent Project".to_string()
+            "打开最近项目".to_string()
         };
 
         let focus_handle = workspace
@@ -668,7 +666,7 @@ impl TitleBar {
                     .when(!is_project_selected, |s| s.color(Color::Muted)),
                 move |_window, cx| {
                     Tooltip::for_action(
-                        "Recent Projects",
+                        "最近项目",
                         &zed_actions::OpenRecent {
                             create_new_window: false,
                         },
@@ -748,9 +746,9 @@ impl TitleBar {
                         }),
                     move |_window, cx| {
                         Tooltip::with_meta(
-                            "Recent Branches",
+                            "最近分支",
                             Some(&zed_actions::git::Branch),
-                            "Local branches only",
+                            "仅本地分支",
                             cx,
                         )
                     },
@@ -782,7 +780,7 @@ impl TitleBar {
                 div()
                     .id("disconnected")
                     .child(Icon::new(IconName::Disconnected).size(IconSize::Small))
-                    .tooltip(Tooltip::text("Disconnected"))
+                    .tooltip(Tooltip::text("已断开连接"))
                     .into_any_element(),
             ),
             _ => None,
@@ -800,7 +798,7 @@ impl TitleBar {
                 let user_store = self.user_store.clone();
                 move |window, cx| {
                     ContextMenu::build(window, cx, |mut menu, _window, cx| {
-                        menu = menu.header("Organizations").separator();
+                        menu = menu.header("组织").separator();
 
                         let current_organization = user_store.read(cx).current_organization();
 
@@ -863,7 +861,7 @@ impl TitleBar {
                 Button::new("organization-menu", &organization.name)
                     .selected_style(ButtonStyle::Tinted(TintColor::Accent))
                     .label_size(LabelSize::Small),
-                Tooltip::text("Toggle Organization Menu"),
+                Tooltip::text("切换组织菜单"),
             )
             .anchor(gpui::Corner::TopRight)
             .into_any_element()

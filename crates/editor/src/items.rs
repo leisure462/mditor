@@ -1107,7 +1107,7 @@ impl Item for Editor {
 
         if is_markdown {
             actions.push((
-                "Open Markdown Preview".into(),
+                "打开 Markdown 预览".into(),
                 Box::new(OpenMarkdownPreview) as Box<dyn gpui::Action>,
             ));
         }

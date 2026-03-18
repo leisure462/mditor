@@ -79,9 +79,9 @@ fn format_absolute_date(
         let timestamp_date = timestamp.date();
         let reference_date = reference.date();
         if timestamp_date == reference_date {
-            "Today".to_string()
+            "今天".to_string()
         } else if reference_date.previous_day() == Some(timestamp_date) {
-            "Yesterday".to_string()
+            "昨天".to_string()
         } else {
             macos::format_date(&timestamp)
         }
@@ -95,9 +95,9 @@ fn format_absolute_date(
         let timestamp_date = timestamp.date();
         let reference_date = reference.date();
         if timestamp_date == reference_date {
-            "Today".to_string()
+            "今天".to_string()
         } else if reference_date.previous_day() == Some(timestamp_date) {
-            "Yesterday".to_string()
+            "昨天".to_string()
         } else {
             windows::format_date(&timestamp)
         }
@@ -154,9 +154,9 @@ fn format_absolute_timestamp(
         let timestamp_date = timestamp.date();
         let reference_date = reference.date();
         if timestamp_date == reference_date {
-            format!("Today at {}", format_absolute_time(timestamp))
+            format!("今天 {}", format_absolute_time(timestamp))
         } else if reference_date.previous_day() == Some(timestamp_date) {
-            format!("Yesterday at {}", format_absolute_time(timestamp))
+            format!("昨天 {}", format_absolute_time(timestamp))
         } else {
             format!(
                 "{} {}",
@@ -186,9 +186,9 @@ fn format_absolute_date_medium(
         let timestamp_date = timestamp.date();
         let reference_date = reference.date();
         if timestamp_date == reference_date {
-            "Today".to_string()
+            "今天".to_string()
         } else if reference_date.previous_day() == Some(timestamp_date) {
-            "Yesterday".to_string()
+            "昨天".to_string()
         } else {
             macos::format_date_medium(&timestamp)
         }
@@ -202,9 +202,9 @@ fn format_absolute_date_medium(
         let timestamp_date = timestamp.date();
         let reference_date = reference.date();
         if timestamp_date == reference_date {
-            "Today".to_string()
+            "今天".to_string()
         } else if reference_date.previous_day() == Some(timestamp_date) {
-            "Yesterday".to_string()
+            "昨天".to_string()
         } else {
             windows::format_date_medium(&timestamp)
         }
@@ -224,9 +224,9 @@ fn format_absolute_date_medium(
         let timestamp_date = timestamp.date();
         let reference_date = reference.date();
         if timestamp_date == reference_date {
-            "Today".to_string()
+            "今天".to_string()
         } else if reference_date.previous_day() == Some(timestamp_date) {
-            "Yesterday".to_string()
+            "昨天".to_string()
         } else {
             format_timestamp_naive_date_medium(
                 timestamp,
@@ -260,14 +260,14 @@ fn format_relative_time(timestamp: OffsetDateTime, reference: OffsetDateTime) ->
     let difference = reference - timestamp;
     let minutes = difference.whole_minutes();
     match minutes {
-        0 => Some("Just now".to_string()),
-        1 => Some("1 minute ago".to_string()),
-        2..=59 => Some(format!("{} minutes ago", minutes)),
+        0 => Some("刚刚".to_string()),
+        1 => Some("1 分钟前".to_string()),
+        2..=59 => Some(format!("{} 分钟前", minutes)),
         _ => {
             let hours = difference.whole_hours();
             match hours {
-                1 => Some("1 hour ago".to_string()),
-                2..=23 => Some(format!("{} hours ago", hours)),
+                1 => Some("1 小时前".to_string()),
+                2..=23 => Some(format!("{} 小时前", hours)),
                 _ => None,
             }
         }
@@ -280,24 +280,24 @@ fn format_relative_date(timestamp: OffsetDateTime, reference: OffsetDateTime) ->
     let difference = reference_date - timestamp_date;
     let days = difference.whole_days();
     match days {
-        0 => "Today".to_string(),
-        1 => "Yesterday".to_string(),
-        2..=6 => format!("{} days ago", days),
+        0 => "今天".to_string(),
+        1 => "昨天".to_string(),
+        2..=6 => format!("{} 天前", days),
         _ => {
             let weeks = difference.whole_weeks();
             match weeks {
-                1 => "1 week ago".to_string(),
-                2..=4 => format!("{} weeks ago", weeks),
+                1 => "1 周前".to_string(),
+                2..=4 => format!("{} 周前", weeks),
                 _ => {
                     let month_diff = calculate_month_difference(timestamp, reference);
                     match month_diff {
-                        0..=1 => "1 month ago".to_string(),
-                        2..=11 => format!("{} months ago", month_diff),
+                        0..=1 => "1 个月前".to_string(),
+                        2..=11 => format!("{} 个月前", month_diff),
                         months => {
                             let years = months / 12;
                             match years {
-                                1 => "1 year ago".to_string(),
-                                _ => format!("{years} years ago"),
+                                1 => "1 年前".to_string(),
+                                _ => format!("{years} 年前"),
                             }
                         }
                     }

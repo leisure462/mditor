@@ -1472,7 +1472,7 @@ impl ThreadView {
             EditorEvent::Blurred => {
                 if title_editor.read(cx).text(cx).is_empty() {
                     title_editor.update(cx, |editor, cx| {
-                        editor.set_text("New Thread", window, cx);
+                        editor.set_text("新线程", window, cx);
                     });
                 }
             }
@@ -3183,19 +3183,19 @@ impl ThreadView {
                                             .border_t_1()
                                             .border_color(cx.theme().colors().border_variant)
                                             .child(
-                                                Label::new("Rules")
+                                                Label::new("规则")
                                                     .color(Color::Muted)
                                                     .size(LabelSize::Small),
                                             )
                                             .when(user_rules_count > 0, |this| {
                                                 this.child(Label::new(format!(
-                                                    "{} user rules",
+                                                    "{} 条用户规则",
                                                     user_rules_count
                                                 )))
                                             })
                                             .when(project_rules_count > 0, |this| {
                                                 this.child(Label::new(format!(
-                                                    "{} project rules",
+                                                    "{} 条项目规则",
                                                     project_rules_count
                                                 )))
                                             }),
@@ -3658,7 +3658,7 @@ impl ThreadView {
                         }),
                 )
                 .item(
-                    ContextMenuEntry::new("Rules")
+                    ContextMenuEntry::new("规则")
                         .icon(IconName::Reader)
                         .icon_color(Color::Muted)
                         .icon_size(IconSize::XSmall)
@@ -4245,7 +4245,7 @@ impl ThreadView {
                 .shape(ui::IconButtonShape::Square)
                 .icon_size(IconSize::Small)
                 .icon_color(Color::Ignored)
-                .tooltip(Tooltip::text("Scroll To Most Recent User Prompt"))
+                .tooltip(Tooltip::text("滚动到最近的用户提问"))
                 .on_click(cx.listener(move |this, _, _, cx| {
                     this.scroll_to_most_recent_user_prompt(cx);
                 }));
@@ -7165,7 +7165,7 @@ impl ThreadView {
                                     .truncate(),
                             )
                             .hover(|s| s.bg(cx.theme().colors().element_hover))
-                            .tooltip(Tooltip::text("View User Rules"))
+                            .tooltip(Tooltip::text("查看用户规则"))
                             .on_click(move |_event, window, cx| {
                                 window.dispatch_action(
                                     Box::new(OpenRulesLibrary {
@@ -7194,7 +7194,7 @@ impl ThreadView {
                                     .color(Color::Muted),
                             )
                             .hover(|s| s.bg(cx.theme().colors().element_hover))
-                            .tooltip(Tooltip::text("View Project Rules"))
+                            .tooltip(Tooltip::text("查看项目规则"))
                             .on_click(cx.listener(Self::handle_open_rules)),
                     )
                 })
@@ -7374,7 +7374,7 @@ impl ThreadView {
         Callout::new()
             .severity(Severity::Error)
             .icon(IconName::XCircle)
-            .title("An Error Happened")
+            .title("发生错误")
             .description_slot(description)
             .actions_slot(
                 h_flex()
@@ -7383,7 +7383,7 @@ impl ThreadView {
                         this.child(
                             IconButton::new("retry", IconName::RotateCw)
                                 .icon_size(IconSize::Small)
-                                .tooltip(Tooltip::text("Retry Generation"))
+                                .tooltip(Tooltip::text("重新生成"))
                                 .on_click(cx.listener(|this, _, _window, cx| {
                                     this.retry_generation(cx);
                                 })),
@@ -7404,13 +7404,13 @@ impl ThreadView {
     fn create_copy_button(&self, message: impl Into<String>) -> impl IntoElement {
         let message = message.into();
 
-        CopyButton::new("copy-error-message", message).tooltip_label("Copy Error Message")
+        CopyButton::new("copy-error-message", message).tooltip_label("复制错误信息")
     }
 
     fn dismiss_error_button(&self, cx: &mut Context<Self>) -> impl IntoElement {
         IconButton::new("dismiss", IconName::Close)
             .icon_size(IconSize::Small)
-            .tooltip(Tooltip::text("Dismiss"))
+            .tooltip(Tooltip::text("关闭"))
             .on_click(cx.listener({
                 move |this, _, _, cx| {
                     this.clear_thread_error(cx);
@@ -7420,7 +7420,7 @@ impl ThreadView {
     }
 
     fn render_resume_notice(_cx: &Context<Self>) -> AnyElement {
-        let description = "This agent does not support viewing previous messages. However, your session will still continue from where you last left off.";
+        let description = "该 Agent 不支持查看之前的消息，但会话仍会从你上次离开的地方继续。";
 
         div()
             .px_2()
@@ -7431,7 +7431,7 @@ impl ThreadView {
                 Callout::new()
                     .severity(Severity::Info)
                     .icon(IconName::Info)
-                    .title("Resumed Session")
+                    .title("已恢复会话")
                     .description(description),
             )
             .into_any_element()
@@ -7482,9 +7482,9 @@ impl ThreadView {
                     v_flex()
                         .child(
                             self.render_empty_state_section_header(
-                                "Recent",
+                                "最近",
                                 Some(
-                                    Button::new("view-history", "View All")
+                                    Button::new("view-history", "查看全部")
                                         .style(ButtonStyle::Subtle)
                                         .label_size(LabelSize::Small)
                                         .key_binding(
@@ -7538,10 +7538,12 @@ impl ThreadView {
         Callout::new()
             .icon(IconName::Warning)
             .severity(Severity::Warning)
-            .title("Codex on Windows")
-            .description("For best performance, run Codex in Windows Subsystem for Linux (WSL2)")
+            .title("Windows 上的 Codex")
+            .description(
+                "为了获得更好的性能，建议在 Windows Subsystem for Linux (WSL2) 中运行 Codex。",
+            )
             .actions_slot(
-                Button::new("open-wsl-modal", "Open in WSL").on_click(cx.listener({
+                Button::new("open-wsl-modal", "在 WSL 中打开").on_click(cx.listener({
                     move |_, _, _window, cx| {
                         #[cfg(windows)]
                         _window.dispatch_action(
@@ -7556,7 +7558,7 @@ impl ThreadView {
                 IconButton::new("dismiss", IconName::Close)
                     .icon_size(IconSize::Small)
                     .icon_color(Color::Muted)
-                    .tooltip(Tooltip::text("Dismiss Warning"))
+                    .tooltip(Tooltip::text("关闭警告"))
                     .on_click(cx.listener({
                         move |this, _, _, cx| {
                             this.show_codex_windows_warning = false;
@@ -7570,13 +7572,13 @@ impl ThreadView {
         Callout::new()
             .icon(IconName::Warning)
             .severity(Severity::Warning)
-            .title("Review before sending")
-            .description("This prompt was pre-filled by an external link. Read it carefully before you send it.")
+            .title("发送前请检查")
+            .description("这条提示词由外部链接预填充，请在发送前仔细检查。")
             .dismiss_action(
                 IconButton::new("dismiss-external-source-prompt-warning", IconName::Close)
                     .icon_size(IconSize::Small)
                     .icon_color(Color::Muted)
-                    .tooltip(Tooltip::text("Dismiss Warning"))
+                    .tooltip(Tooltip::text("关闭警告"))
                     .on_click(cx.listener({
                         move |this, _, _, cx| {
                             this.show_external_source_prompt_warning = false;
@@ -7653,7 +7655,7 @@ impl ThreadView {
                 .description(description)
                 .actions_slot(
                     h_flex().gap_0p5().child(
-                        Button::new("start-new-thread", "Start New Thread")
+                        Button::new("start-new-thread", "开始新线程")
                             .label_size(LabelSize::Small)
                             .on_click(cx.listener(|this, _, window, cx| {
                                 let session_id = this.thread.read(cx).session_id().clone();

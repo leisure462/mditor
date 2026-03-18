@@ -141,8 +141,8 @@ impl RenderOnce for AlertModal {
         if let Some(footer) = self.footer {
             modal = modal.child(footer);
         } else if has_default_footer {
-            let primary_action = self.primary_action.unwrap_or_else(|| "Ok".into());
-            let dismiss_label = self.dismiss_label.unwrap_or_else(|| "Cancel".into());
+            let primary_action = self.primary_action.unwrap_or_else(|| "确定".into());
+            let dismiss_label = self.dismiss_label.unwrap_or_else(|| "取消".into());
 
             modal = modal.child(
                 h_flex()
@@ -217,7 +217,7 @@ impl Component for AlertModal {
                             )
                             .child(
                                 "Untrusted workspaces are opened in Restricted Mode to protect your system.
-Review .mditor/settings.json for any extensions or commands configured by this project.",
+Review .prism/settings.json for any extensions or commands configured by this project.",
                             )
                             .child(
                                 v_flex()

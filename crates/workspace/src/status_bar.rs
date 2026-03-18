@@ -1,7 +1,7 @@
 use crate::{ItemHandle, Pane};
 use gpui::{
     AnyView, App, Context, Decorations, Entity, IntoElement, ParentElement, Render, Styled,
-    Subscription, Window,
+    Subscription, Window, px,
 };
 use std::any::TypeId;
 use theme::CLIENT_SIDE_DECORATION_ROUNDING;
@@ -42,9 +42,14 @@ impl Render for StatusBar {
             .w_full()
             .justify_between()
             .gap(DynamicSpacing::Base08.rems(cx))
-            .py(DynamicSpacing::Base04.rems(cx))
             .px(DynamicSpacing::Base06.rems(cx))
             .bg(cx.theme().colors().status_bar_background)
+            .when(cfg!(target_os = "windows"), |this| {
+                this.h(px(28.)).items_center()
+            })
+            .when(!cfg!(target_os = "windows"), |this| {
+                this.py(DynamicSpacing::Base04.rems(cx))
+            })
             .map(|el| match window.window_decorations() {
                 Decorations::Server => el,
                 Decorations::Client { tiling, .. } => el

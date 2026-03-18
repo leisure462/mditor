@@ -219,8 +219,8 @@ pub fn prevent_root_execution() {
     if is_root && !allow_root {
         eprintln!(
             "\
-Error: Running Mditor as root or via sudo is unsupported.
-       Doing so (even once) may subtly break things for all subsequent non-root usage of Mditor.
+Error: Running Prism as root or via sudo is unsupported.
+       Doing so (even once) may subtly break things for all subsequent non-root usage of Prism.
        It is untested and not recommended, don't complain when things break.
        If you wish to proceed anyways, set `ZED_ALLOW_ROOT=true` in your environment."
         );
@@ -303,31 +303,31 @@ pub fn get_shell_safe_zed_path(shell_kind: shell::ShellKind) -> anyhow::Result<S
 
     zed_path
         .try_shell_safe(shell_kind)
-        .context("Failed to shell-escape Mditor executable path.")
+        .context("Failed to shell-escape Prism executable path.")
 }
 
-/// Returns a path for the mditor cli executable, this function
-/// should be called from the mditor executable, not mditor-cli.
+/// Returns a path for the prism cli executable, this function
+/// should be called from the prism executable, not prism-cli.
 pub fn get_zed_cli_path() -> Result<PathBuf> {
     use anyhow::Context as _;
     let zed_path =
-        std::env::current_exe().context("Failed to determine current mditor executable path.")?;
+        std::env::current_exe().context("Failed to determine current prism executable path.")?;
     let parent = zed_path
         .parent()
-        .context("Failed to determine parent directory of mditor executable path.")?;
+        .context("Failed to determine parent directory of prism executable path.")?;
 
     let possible_locations: &[&str] = if cfg!(target_os = "macos") {
-        // On macOS, the mditor executable and mditor-cli are inside the app bundle,
+        // On macOS, the prism executable and prism-cli are inside the app bundle,
         // so here ./cli is for both installed and development builds.
         &["./cli"]
     } else if cfg!(target_os = "windows") {
-        // bin/mditor.exe is for installed builds, ./cli.exe is for development builds.
-        &["bin/mditor.exe", "./cli.exe"]
+        // bin/prism.exe is for installed builds, ./cli.exe is for development builds.
+        &["bin/prism.exe", "./cli.exe"]
     } else if cfg!(target_os = "linux") || cfg!(target_os = "freebsd") {
         // bin is the standard, ./cli is for the target directory in development builds.
-        &["../bin/mditor", "./cli"]
+        &["../bin/prism", "./cli"]
     } else {
-        anyhow::bail!("unsupported platform for determining mditor-cli path");
+        anyhow::bail!("unsupported platform for determining prism-cli path");
     };
 
     possible_locations
@@ -341,7 +341,7 @@ pub fn get_zed_cli_path() -> Result<PathBuf> {
         })
         .with_context(|| {
             format!(
-                "could not find mditor-cli from any of: {}",
+                "could not find prism-cli from any of: {}",
                 possible_locations.join(", ")
             )
         })

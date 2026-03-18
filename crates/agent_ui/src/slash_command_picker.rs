@@ -88,7 +88,7 @@ impl PickerDelegate for SlashCommandDelegate {
     }
 
     fn placeholder_text(&self, _window: &mut Window, _cx: &mut App) -> Arc<str> {
-        "Select a command...".into()
+        "选择命令...".into()
     }
 
     fn update_matches(

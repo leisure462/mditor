@@ -317,7 +317,7 @@ impl ConfigureContextServerModal {
                 }),
                 ContextServerSettings::Extension { .. } => {
                     return Err(anyhow::anyhow!(
-                        "Extension-based MCP servers are no longer supported in mditor"
+                        "Extension-based MCP servers are no longer supported in Prism"
                     ));
                 }
             };
@@ -444,14 +444,11 @@ impl ConfigureContextServerModal {
         self.workspace
             .update(cx, {
                 |workspace, cx| {
-                    let status_toast = StatusToast::new(
-                        format!("{} configured successfully.", id.0),
-                        cx,
-                        |this, _cx| {
+                    let status_toast =
+                        StatusToast::new(format!("{} 配置成功。", id.0), cx, |this, _cx| {
                             this.icon(ToastIcon::new(IconName::ToolHammer).color(Color::Muted))
-                                .action("Dismiss", |_, _| {})
-                        },
-                    );
+                                .action("关闭", |_, _| {})
+                        });
 
                     workspace.toggle_status_toast(status_toast, cx);
                 }
@@ -485,14 +482,14 @@ impl EventEmitter<DismissEvent> for ConfigureContextServerModal {}
 impl ConfigureContextServerModal {
     fn render_modal_header(&self) -> ModalHeader {
         let text: SharedString = match &self.source {
-            ConfigurationSource::New { .. } => "Add MCP Server".into(),
-            ConfigurationSource::Existing { .. } => "Configure MCP Server".into(),
+            ConfigurationSource::New { .. } => "添加 MCP 服务器".into(),
+            ConfigurationSource::Existing { .. } => "配置 MCP 服务器".into(),
         };
         ModalHeader::new().headline(text)
     }
 
     fn render_modal_description(&self) -> AnyElement {
-        const MODAL_DESCRIPTION: &str = "Visit the MCP server configuration docs to find all necessary arguments and environment variables.";
+        const MODAL_DESCRIPTION: &str = "请查阅 MCP 服务器配置文档，获取所需的参数和环境变量。";
         Label::new(MODAL_DESCRIPTION)
             .color(Color::Muted)
             .into_any_element()
@@ -543,14 +540,14 @@ impl ConfigureContextServerModal {
             .start_slot::<Button>(
                 if let ConfigurationSource::New { is_http, .. } = &self.source {
                     let label = if *is_http {
-                        "Configure Local"
+                        "配置本地服务器"
                     } else {
-                        "Configure Remote"
+                        "配置远程服务器"
                     };
                     let tooltip = if *is_http {
-                        "Configure an MCP server that runs on stdin/stdout."
+                        "配置一个通过 stdin/stdout 运行的 MCP 服务器。"
                     } else {
-                        "Configure an MCP server that you connect to over HTTP"
+                        "配置一个通过 HTTP 连接的 MCP 服务器。"
                     };
 
                     Some(
@@ -582,9 +579,9 @@ impl ConfigureContextServerModal {
                         Button::new(
                             "cancel",
                             if self.source.has_configuration_options() {
-                                "Cancel"
+                                "取消"
                             } else {
-                                "Dismiss"
+                                "关闭"
                             },
                         )
                         .key_binding(
@@ -599,9 +596,9 @@ impl ConfigureContextServerModal {
                         Button::new(
                             "add-server",
                             if self.source.is_new() {
-                                "Add Server"
+                                "添加服务器"
                             } else {
-                                "Configure Server"
+                                "保存配置"
                             },
                         )
                         .disabled(is_connecting)
@@ -629,7 +626,7 @@ impl ConfigureContextServerModal {
                     .into_any_element(),
             )
             .child(
-                Label::new("Waiting for Context Server")
+                Label::new("等待 Context Server 连接中")
                     .size(LabelSize::Small)
                     .color(Color::Muted),
             )

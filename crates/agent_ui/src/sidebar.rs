@@ -1157,7 +1157,7 @@ impl Sidebar {
                             IconButton::new(ib_id, IconName::NewThread)
                                 .icon_size(IconSize::Small)
                                 .icon_color(Color::Muted)
-                                .tooltip(Tooltip::text("New Thread"))
+                                .tooltip(Tooltip::text("新线程"))
                                 .on_click(cx.listener(move |this, _, window, cx| {
                                     this.selection = None;
                                     this.create_new_thread(&workspace_for_new_thread, window, cx);
@@ -1918,7 +1918,7 @@ impl Sidebar {
             .child(
                 Button::new(
                     SharedString::from(format!("new-thread-btn-{}", ix)),
-                    "New Thread",
+                    "新线程",
                 )
                 .full_width()
                 .style(ButtonStyle::Outlined)

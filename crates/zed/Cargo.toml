@@ -1,5 +1,5 @@
 [package]
-description = "A focused Markdown editor built on Zed."
+description = "A focused Markdown editor with integrated AI agent workflows."
 edition.workspace = true
 name = "zed"
 version = "1.0.1"
@@ -8,7 +8,7 @@ license = "GPL-3.0-or-later"
 authors = ["leisure462"]
 homepage = "https://github.com/leisure462/mditor"
 repository = "https://github.com/leisure462/mditor"
-default-run = "mditor"
+default-run = "prism"
 
 [lints]
 workspace = true
@@ -53,11 +53,11 @@ visual-tests = [
 ]
 
 [[bin]]
-name = "mditor"
+name = "prism"
 path = "src/main.rs"
 
 [[bin]]
-name = "mditor_visual_test_runner"
+name = "prism_visual_test_runner"
 path = "src/visual_test_runner.rs"
 required-features = ["visual-tests"]
 
@@ -108,7 +108,6 @@ rayon.workspace = true
 http_client.workspace = true
 image_viewer.workspace = true
 install_cli.workspace = true
-keymap_editor.workspace = true
 language.workspace = true
 language_model.workspace = true
 language_models.workspace = true
@@ -219,35 +218,35 @@ search = { workspace = true, features = ["test-support"] }
 
 [package.metadata.bundle-dev]
 icon = ["resources/app-icon-dev@2x.png", "resources/app-icon-dev.png"]
-identifier = "dev.mditor.Mditor-Dev"
-name = "Mditor Dev"
+identifier = "dev.prism.Prism-Dev"
+name = "Prism Dev"
 osx_minimum_system_version = "10.15.7"
 osx_info_plist_exts = ["resources/info/*"]
-osx_url_schemes = ["mditor"]
+osx_url_schemes = ["prism"]
 
 [package.metadata.bundle-nightly]
 icon = ["resources/app-icon-nightly@2x.png", "resources/app-icon-nightly.png"]
-identifier = "dev.mditor.Mditor-Nightly"
-name = "Mditor Nightly"
+identifier = "dev.prism.Prism-Nightly"
+name = "Prism Nightly"
 osx_minimum_system_version = "10.15.7"
 osx_info_plist_exts = ["resources/info/*"]
-osx_url_schemes = ["mditor"]
+osx_url_schemes = ["prism"]
 
 [package.metadata.bundle-preview]
 icon = ["resources/app-icon-preview@2x.png", "resources/app-icon-preview.png"]
-identifier = "dev.mditor.Mditor-Preview"
-name = "Mditor Preview"
+identifier = "dev.prism.Prism-Preview"
+name = "Prism Preview"
 osx_minimum_system_version = "10.15.7"
 osx_info_plist_exts = ["resources/info/*"]
-osx_url_schemes = ["mditor"]
+osx_url_schemes = ["prism"]
 
 [package.metadata.bundle-stable]
 icon = ["resources/app-icon@2x.png", "resources/app-icon.png"]
-identifier = "dev.mditor.Mditor"
-name = "Mditor"
+identifier = "dev.prism.Prism"
+name = "Prism"
 osx_minimum_system_version = "10.15.7"
 osx_info_plist_exts = ["resources/info/*"]
-osx_url_schemes = ["mditor"]
+osx_url_schemes = ["prism"]
 
 [package.metadata.cargo-machete]
 ignored = ["profiling", "zstd", "tracing"]

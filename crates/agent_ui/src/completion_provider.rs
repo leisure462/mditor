@@ -124,13 +124,13 @@ impl PromptContextType {
 
     pub fn label(&self) -> &'static str {
         match self {
-            Self::File => "Files & Directories",
-            Self::Symbol => "Symbols",
+            Self::File => "文件与目录",
+            Self::Symbol => "符号",
             Self::Fetch => "Fetch",
-            Self::Thread => "Threads",
-            Self::Rules => "Rules",
-            Self::Diagnostics => "Diagnostics",
-            Self::BranchDiff => "Branch Diff",
+            Self::Thread => "线程",
+            Self::Rules => "规则",
+            Self::Diagnostics => "诊断",
+            Self::BranchDiff => "分支差异",
         }
     }
 
@@ -192,7 +192,7 @@ pub struct EntryMatch {
 fn session_title(title: Option<SharedString>) -> SharedString {
     title
         .filter(|title| !title.is_empty())
-        .unwrap_or_else(|| SharedString::new_static("New Thread"))
+        .unwrap_or_else(|| SharedString::new_static("新线程"))
 }
 
 #[derive(Debug, Clone)]

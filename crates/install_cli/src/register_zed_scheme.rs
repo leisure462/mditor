@@ -4,7 +4,7 @@ use gpui::{AsyncApp, actions};
 actions!(
     cli,
     [
-        /// Registers the mditor:// URL scheme handler.
+        /// Registers the prism:// URL scheme handler.
         RegisterZedScheme
     ]
 );

@@ -13,7 +13,8 @@ pub const TRAFFIC_LIGHT_PADDING: f32 = 71.;
 
 /// Returns the platform-appropriate title bar height.
 ///
-/// On Windows, this returns a fixed height of 32px.
+/// On Windows, Prism uses a more compact 28px title bar so it visually aligns
+/// with the tab bar and status bar.
 /// On other platforms, it scales with the window's rem size (1.75x) with a minimum of 34px.
 #[cfg(not(target_os = "windows"))]
 pub fn platform_title_bar_height(window: &Window) -> Pixels {
@@ -23,5 +24,5 @@ pub fn platform_title_bar_height(window: &Window) -> Pixels {
 #[cfg(target_os = "windows")]
 pub fn platform_title_bar_height(_window: &Window) -> Pixels {
     // todo(windows) instead of hard coded size report the actual size to the Windows platform API
-    px(32.)
+    px(28.)
 }

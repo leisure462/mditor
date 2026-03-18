@@ -20,11 +20,12 @@ use gpui::{
     MouseButton, MouseDownEvent, ParentElement, Pixels, Point, Render, ScrollStrategy,
     SharedString, Stateful, StatefulInteractiveElement as _, Styled, Subscription, Task,
     UniformListScrollHandle, WeakEntity, Window, actions, anchored, deferred, div, point, px, size,
-    uniform_list,
+    transparent_black, uniform_list,
 };
 use itertools::Itertools;
 use language::language_settings::language_settings;
 use language::{Anchor, BufferId, BufferSnapshot, OffsetRangeExt, OutlineItem};
+use markdown_preview::markdown_preview_view::MarkdownPreviewView;
 use menu::{Cancel, SelectFirst, SelectLast, SelectNext, SelectPrevious};
 use std::{
     cmp,
@@ -2337,20 +2338,32 @@ impl OutlinePanel {
             outline.buffer_id, outline.excerpt_id, outline.outline.range, &outline.outline.text,
         )));
 
-        let label_element = outline::render_item(
-            &outline.outline,
-            string_match
-                .map(|string_match| string_match.ranges().collect::<Vec<_>>())
-                .unwrap_or_default(),
-            cx,
-        )
-        .into_any_element();
-
         let is_active = match self.selected_entry() {
             Some(PanelEntry::Outline(OutlineEntry::Outline(selected))) => {
                 outline == selected && outline.outline == selected.outline
             }
             _ => false,
+        };
+
+        let label_element = if let Some((level, prefix_len, title)) =
+            markdown_heading_info(&outline.outline.text)
+        {
+            render_markdown_outline_label(
+                level,
+                title,
+                adjusted_highlight_positions(string_match, prefix_len, title),
+                is_active,
+                cx,
+            )
+        } else {
+            outline::render_item(
+                &outline.outline,
+                string_match
+                    .map(|string_match| string_match.ranges().collect::<Vec<_>>())
+                    .unwrap_or_default(),
+                cx,
+            )
+            .into_any_element()
         };
 
         let has_children = self
@@ -2684,9 +2697,32 @@ impl OutlinePanel {
         cx: &mut Context<OutlinePanel>,
     ) -> Stateful<Div> {
         let settings = OutlinePanelSettings::get_global(cx);
+        let colors = cx.theme().colors();
+        let active_background = colors.ghost_element_selected;
+        let inactive_border = transparent_black();
+        let active_border = if self.focus_handle.contains_focused(window, cx) {
+            colors.panel_focused_border
+        } else {
+            colors.border_variant
+        };
+
         div()
             .text_ui(cx)
             .id(item_id.clone())
+            .mx_1()
+            .my(px(1.))
+            .rounded_sm()
+            .border_1()
+            .border_color(if is_active {
+                active_border
+            } else {
+                inactive_border
+            })
+            .bg(if is_active {
+                active_background
+            } else {
+                transparent_black()
+            })
             .on_click({
                 let clicked_entry = rendered_entry.clone();
                 cx.listener(move |outline_panel, event: &gpui::ClickEvent, window, cx| {
@@ -2714,8 +2750,11 @@ impl OutlinePanel {
                     .toggle_state(is_active)
                     .child(
                         h_flex()
+                            .w_full()
+                            .items_center()
+                            .py_0p5()
                             .child(h_flex().w(px(16.)).justify_center().child(icon_element))
-                            .child(h_flex().h_6().child(label_element).ml_1()),
+                            .child(h_flex().h_6().flex_1().child(label_element).ml_1()),
                     )
                     .on_secondary_mouse_down(cx.listener(
                         move |outline_panel, event: &MouseDownEvent, window, cx| {
@@ -2731,9 +2770,6 @@ impl OutlinePanel {
                         },
                     )),
             )
-            .border_1()
-            .border_r_2()
-            .rounded_none()
             .hover(|style| {
                 if is_active {
                     style
@@ -4934,10 +4970,105 @@ fn workspace_active_editor(
     cx: &App,
 ) -> Option<(Box<dyn ItemHandle>, Entity<Editor>)> {
     let active_item = workspace.active_item(cx)?;
-    let active_editor = active_item
+
+    if let Some(active_editor) = active_item
         .act_as::<Editor>(cx)
+        .filter(|editor| editor.read(cx).mode().is_full())
+    {
+        return Some((active_item, active_editor));
+    }
+
+    let active_editor = active_item
+        .act_as::<MarkdownPreviewView>(cx)
+        .and_then(|preview| preview.read(cx).linked_editor())
         .filter(|editor| editor.read(cx).mode().is_full())?;
+
     Some((active_item, active_editor))
+}
+
+fn markdown_heading_info(text: &str) -> Option<(usize, usize, &str)> {
+    let trimmed_start = text.trim_start();
+    let leading_whitespace = text.len().saturating_sub(trimmed_start.len());
+    let heading_level = trimmed_start.chars().take_while(|c| *c == '#').count();
+    if heading_level == 0 {
+        return None;
+    }
+
+    let remainder = trimmed_start.get(heading_level..)?;
+    let heading_text = remainder.trim_start();
+    if heading_text.len() == remainder.len() {
+        return None;
+    }
+
+    let prefix_len = leading_whitespace + heading_level + (remainder.len() - heading_text.len());
+    let heading_text = heading_text.trim();
+
+    if heading_text.is_empty() {
+        None
+    } else {
+        Some((heading_level, prefix_len, heading_text))
+    }
+}
+
+fn adjusted_highlight_positions(
+    string_match: Option<&StringMatch>,
+    prefix_len: usize,
+    text: &str,
+) -> Vec<usize> {
+    string_match
+        .map(|string_match| {
+            string_match
+                .positions
+                .iter()
+                .filter_map(|position| {
+                    let adjusted = position.checked_sub(prefix_len)?;
+                    if adjusted < text.len() && text.is_char_boundary(adjusted) {
+                        Some(adjusted)
+                    } else {
+                        None
+                    }
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn render_markdown_outline_label(
+    level: usize,
+    title: &str,
+    highlight_positions: Vec<usize>,
+    is_active: bool,
+    cx: &mut App,
+) -> AnyElement {
+    let badge_background = if is_active {
+        cx.theme().colors().element_selected.opacity(0.35)
+    } else {
+        cx.theme().colors().ghost_element_selected.opacity(0.85)
+    };
+
+    h_flex()
+        .w_full()
+        .items_center()
+        .gap_1p5()
+        .child(
+            div()
+                .px_1()
+                .py_0p5()
+                .rounded_sm()
+                .bg(badge_background)
+                .child(
+                    Label::new(format!("H{level}"))
+                        .size(LabelSize::XSmall)
+                        .color(Color::Muted),
+                ),
+        )
+        .child(
+            HighlightedLabel::new(title.to_string(), highlight_positions)
+                .color(Color::Default)
+                .truncate()
+                .single_line(),
+        )
+        .into_any_element()
 }
 
 fn back_to_common_visited_parent(
@@ -5024,7 +5155,7 @@ impl Panel for OutlinePanel {
     }
 
     fn icon_tooltip(&self, _window: &Window, _: &App) -> Option<&'static str> {
-        Some("Outline Panel")
+        Some("大纲面板")
     }
 
     fn toggle_action(&self) -> Box<dyn Action> {

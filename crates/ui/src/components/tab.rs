@@ -76,12 +76,28 @@ impl Tab {
         self
     }
 
-    pub fn content_height(cx: &App) -> Pixels {
-        DynamicSpacing::Base32.px(cx) - px(1.)
+    pub fn content_height(_cx: &App) -> Pixels {
+        #[cfg(target_os = "windows")]
+        {
+            px(27.)
+        }
+
+        #[cfg(not(target_os = "windows"))]
+        {
+            DynamicSpacing::Base32.px(_cx) - px(1.)
+        }
     }
 
-    pub fn container_height(cx: &App) -> Pixels {
-        DynamicSpacing::Base32.px(cx)
+    pub fn container_height(_cx: &App) -> Pixels {
+        #[cfg(target_os = "windows")]
+        {
+            px(28.)
+        }
+
+        #[cfg(not(target_os = "windows"))]
+        {
+            DynamicSpacing::Base32.px(_cx)
+        }
     }
 }
 

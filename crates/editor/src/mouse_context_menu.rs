@@ -296,7 +296,7 @@ pub fn deploy_context_menu(
                     Box::new(RevealInFileManager),
                 )
                 .when(is_markdown, |builder| {
-                    builder.action("Open Markdown Preview", Box::new(OpenMarkdownPreview))
+                    builder.action("打开 Markdown 预览", Box::new(OpenMarkdownPreview))
                 })
                 .when(is_svg, |builder| {
                     builder.action("Open SVG Preview", Box::new(OpenSvgPreview))

@@ -529,7 +529,7 @@ async fn download_remote_server_release(
 
     if smol::fs::metadata(&version_path).await.is_err() {
         log::info!(
-            "downloading mditor-remote-server {os} {arch} version {}",
+            "downloading prism-remote-server {os} {arch} version {}",
             release.version
         );
         set_status("Downloading remote server", cx);
